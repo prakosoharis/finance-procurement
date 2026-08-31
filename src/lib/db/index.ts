@@ -1,9 +1,6 @@
-import { Pool, neonConfig } from "@neondatabase/serverless";
-import { drizzle } from "drizzle-orm/neon-serverless";
-import ws from "ws";
+import { neon } from "@neondatabase/serverless";
+import { drizzle } from "drizzle-orm/neon-http";
 import * as schema from "./schema";
-
-neonConfig.webSocketConstructor = ws;
 
 type Db = ReturnType<typeof drizzle<typeof schema>>;
 
@@ -14,14 +11,18 @@ let cached: Db | null = null;
  * rather than at module import time — Next.js imports every route module during
  * `next build`'s page-data-collection pass, which happens without DATABASE_URL available
  * on most CI/build machines.
+ *
+ * Uses Neon's HTTP driver (one query = one HTTP request) rather than the WebSocket
+ * `Pool` driver — it needs no `ws` polyfill, has no connection/session state to manage,
+ * and is the driver Neon recommends for serverless/edge Next.js deployments.
  */
 function getDb(): Db {
   if (cached) return cached;
   if (!process.env.DATABASE_URL) {
     throw new Error("DATABASE_URL is not set — copy .env.example to .env.local and fill it in.");
   }
-  const pool = new Pool({ connectionString: process.env.DATABASE_URL });
-  cached = drizzle(pool, { schema });
+  const sql = neon(process.env.DATABASE_URL);
+  cached = drizzle(sql, { schema });
   return cached;
 }
 

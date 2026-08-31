@@ -1,13 +1,10 @@
-import "dotenv/config";
-import { Pool, neonConfig } from "@neondatabase/serverless";
-import { drizzle } from "drizzle-orm/neon-serverless";
-import ws from "ws";
+import "./load-env";
+import { neon } from "@neondatabase/serverless";
+import { drizzle } from "drizzle-orm/neon-http";
 import bcrypt from "bcryptjs";
 import { randomBytes } from "crypto";
 import * as schema from "../src/lib/db/schema";
 import { COST_COMPONENT_DEFS } from "../src/lib/calculations";
-
-neonConfig.webSocketConstructor = ws;
 
 const DIVISION_CODES = [
   { code: "SMM", name: "SMM Mining Procurement" },
@@ -20,8 +17,8 @@ async function main() {
   if (!process.env.DATABASE_URL) {
     throw new Error("DATABASE_URL is not set — copy .env.example to .env.local and fill it in.");
   }
-  const pool = new Pool({ connectionString: process.env.DATABASE_URL });
-  const db = drizzle(pool, { schema });
+  const sql = neon(process.env.DATABASE_URL);
+  const db = drizzle(sql, { schema });
 
   console.log("Seeding divisions...");
   for (const d of DIVISION_CODES) {
@@ -80,7 +77,6 @@ async function main() {
 
   console.log(`Cost component keys available: ${COST_COMPONENT_DEFS.map((c) => c.key).join(", ")}`);
   console.log("Seed complete.");
-  await pool.end();
 }
 
 main().catch((err) => {
