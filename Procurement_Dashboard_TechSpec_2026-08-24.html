@@ -1,0 +1,719 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Procurement P&L Dashboard — Technical Specification</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:'Inter',Arial,sans-serif;font-size:13px;color:#1e293b;background:#fff;line-height:1.6;padding:0;}
+  @media print{
+    .no-print{display:none!important;}
+    .page-break{page-break-before:always;}
+    body{padding:0;}
+    .outer{padding:15mm 18mm;}
+  }
+  .outer{max-width:960px;margin:0 auto;padding:40px 48px;}
+
+  /* COVER */
+  .cover{text-align:center;padding:80px 20px 60px;border-bottom:3px solid #0f2942;margin-bottom:48px;}
+  .cover-eyebrow{font-size:11px;font-weight:700;letter-spacing:.15em;color:#0e7490;margin-bottom:12px;}
+  .cover-title{font-size:36px;font-weight:800;color:#0f2942;line-height:1.2;margin-bottom:8px;}
+  .cover-sub{font-size:18px;font-weight:400;color:#475569;margin-bottom:32px;}
+  .cover-divider{border:none;border-top:1px solid #e2e8f0;margin:24px auto;width:60%;}
+  .cover-meta{font-size:12px;color:#94a3b8;}
+  .cover-badge{display:inline-flex;gap:16px;margin-top:20px;flex-wrap:wrap;justify-content:center;}
+  .cover-badge span{background:#f1f5f9;border:1px solid #e2e8f0;border-radius:20px;padding:5px 14px;font-size:11px;font-weight:600;color:#475569;}
+
+  /* TOC */
+  .toc{background:#f8fafc;border:1px solid #e2e8f0;border-left:4px solid #0f2942;border-radius:4px;padding:24px 28px;margin-bottom:40px;}
+  .toc h2{font-size:13px;font-weight:700;letter-spacing:.08em;color:#0f2942;margin-bottom:14px;text-transform:uppercase;}
+  .toc ol{padding-left:20px;}
+  .toc li{font-size:13px;color:#334155;padding:3px 0;}
+  .toc li a{color:#0e7490;text-decoration:none;}
+  .toc li a:hover{text-decoration:underline;}
+
+  /* HEADINGS */
+  h1.sec{font-size:22px;font-weight:800;color:#0f2942;border-bottom:3px solid #0f2942;padding-bottom:8px;margin:40px 0 16px;}
+  h2.sub{font-size:16px;font-weight:700;color:#1e3a8a;border-bottom:1px solid #bfdbfe;padding-bottom:5px;margin:28px 0 12px;}
+  h3.sub3{font-size:14px;font-weight:700;color:#0e7490;margin:18px 0 8px;}
+
+  /* BODY TEXT */
+  p.body{font-size:13px;color:#475569;margin-bottom:10px;line-height:1.65;}
+  ul.list{padding-left:20px;margin-bottom:12px;}
+  ul.list li{font-size:13px;color:#475569;padding:3px 0;}
+  ul.list li::marker{color:#0e7490;}
+
+  /* TABLES */
+  .tbl-wrap{overflow-x:auto;margin:12px 0 24px;border-radius:6px;border:1px solid #e2e8f0;box-shadow:0 1px 3px rgba(0,0,0,.04);}
+  table{width:100%;border-collapse:collapse;font-size:12px;}
+  thead tr{background:#0f2942;}
+  thead th{color:#fff;font-weight:700;padding:10px 12px;text-align:left;white-space:nowrap;letter-spacing:.02em;}
+  tbody tr:nth-child(even){background:#f8fafc;}
+  tbody tr:hover{background:#eff6ff;}
+  tbody td{padding:8px 12px;color:#334155;border-bottom:1px solid #f1f5f9;vertical-align:top;}
+  tbody td:first-child{font-weight:500;color:#0f172a;}
+  td.center{text-align:center;}
+  td.mono{font-family:'JetBrains Mono',monospace;font-size:11px;color:#1e40af;}
+  td.green{color:#166534;font-weight:600;}
+  td.gold{color:#b45309;font-weight:600;}
+  td.red{color:#991b1b;font-weight:600;}
+
+  /* CALLOUTS */
+  .callout{display:flex;gap:0;margin:14px 0;border-radius:4px;overflow:hidden;border:1px solid #e2e8f0;}
+  .callout-badge{background:#0f2942;color:#fff;font-size:10px;font-weight:700;padding:10px 14px;letter-spacing:.06em;white-space:nowrap;display:flex;align-items:center;}
+  .callout-body{background:#f8fafc;padding:10px 14px;font-size:12.5px;color:#334155;flex:1;line-height:1.55;}
+  .callout.green .callout-badge{background:#166534;}
+  .callout.gold .callout-badge{background:#b45309;}
+  .callout.teal .callout-badge{background:#0e7490;}
+  .callout.red .callout-badge{background:#991b1b;}
+
+  /* CODE */
+  code{font-family:'JetBrains Mono',monospace;background:#f1f5f9;padding:2px 6px;border-radius:3px;font-size:11px;color:#1e40af;}
+  pre{background:#f1f5f9;border:1px solid #e2e8f0;border-radius:6px;padding:14px 16px;font-size:11.5px;overflow-x:auto;margin:10px 0;}
+
+  /* PHASE TABLE */
+  .phase-row td:first-child{font-weight:700;color:#0f2942;}
+  .phase-row td:last-child{color:#0e7490;font-weight:600;white-space:nowrap;}
+
+  /* FOOTER */
+  .doc-footer{margin-top:60px;padding-top:16px;border-top:1px solid #e2e8f0;font-size:11px;color:#94a3b8;display:flex;justify-content:space-between;}
+
+  /* PRINT BTN */
+  .print-bar{background:#0f2942;color:#fff;text-align:center;padding:12px;font-size:13px;font-weight:600;position:sticky;top:0;z-index:99;}
+  .print-bar button{background:#0ea5e9;color:#fff;border:none;border-radius:6px;padding:6px 18px;font-weight:700;cursor:pointer;margin-left:14px;font-size:12px;}
+  .print-bar button:hover{background:#0284c7;}
+</style>
+</head>
+<body>
+
+<div class="print-bar no-print">
+  📄 Technical Specification Document — Procurement P&L Dashboard
+  <button onclick="window.print()">🖨 Print / Save as PDF</button>
+  <button onclick="document.querySelector('.print-bar').style.display='none'">✕ Hide Bar</button>
+</div>
+
+<div class="outer">
+
+<!-- COVER -->
+<div class="cover">
+  <div class="cover-eyebrow">TECHNICAL SPECIFICATION DOCUMENT</div>
+  <div class="cover-title">Procurement P&L<br>Intelligence Dashboard</div>
+  <div class="cover-sub">Full-Stack Production Blueprint</div>
+  <hr class="cover-divider">
+  <div class="cover-meta">Version 1.0 &nbsp;·&nbsp; 24 August 2026 &nbsp;·&nbsp; Confidential</div>
+  <div class="cover-badge">
+    <span>Next.js 14</span><span>Supabase + PostgreSQL</span><span>TypeScript</span>
+    <span>Zustand</span><span>Chart.js</span><span>Anthropic Claude</span>
+  </div>
+</div>
+
+<!-- TOC -->
+<div class="toc">
+  <h2>Table of Contents</h2>
+  <ol>
+    <li><a href="#s1">Executive Summary</a></li>
+    <li><a href="#s2">Database Schema — 12 Tables with ERD</a></li>
+    <li><a href="#s3">Data Flow Requirements — CRUD API Design</a></li>
+    <li><a href="#s4">Authentication & Access Control (RBAC)</a></li>
+    <li><a href="#s5">State Management</a></li>
+    <li><a href="#s6">Features & Third-Party Integrations</a></li>
+    <li><a href="#s7">Deployment & DevOps</a></li>
+    <li><a href="#s8">Migration Plan</a></li>
+  </ol>
+</div>
+
+<!-- ═══════════════ SECTION 1 ═══════════════ -->
+<h1 class="sec" id="s1">1. Executive Summary</h1>
+<p class="body">This Technical Specification Document provides a comprehensive blueprint for migrating the Procurement P&L Intelligence Dashboard from a single-file HTML artifact into a production-ready, full-stack web application backed by Supabase (PostgreSQL).</p>
+<p class="body">The dashboard currently covers:</p>
+<ul class="list">
+  <li>Multi-division procurement P&L tracking — SMM, SUN, OliveLink, Combine</li>
+  <li>Actual vs Budget comparison across 15 cost components per period (Q1–Q4, FY, YTD)</li>
+  <li>ROI, Value Creation, Net Value Creation, and SUM analysis with Hackett benchmarks</li>
+  <li>BI JISDOR FX rate integration with live refresh (USD ↔ IDR)</li>
+  <li>BCG-style dual Actual/Budget charts with CAGR overlays and value labels</li>
+  <li>YoY comparison, Peer Parity Engine, and Ratio to Revenue/GP analysis</li>
+  <li>P&L + ROI Report (formatted table: cyan Net Value Creation, orange SUM rows)</li>
+  <li>User Directory with role-based access (Admin / Manager / Viewer)</li>
+  <li>AI Assistant (Claude Sonnet — context-aware P&L analysis)</li>
+  <li>Export to Excel (.xlsx), PDF, and PowerPoint (.pptx) with embedded charts</li>
+</ul>
+<div class="callout teal"><div class="callout-badge">PROPOSED STACK</div><div class="callout-body"><strong>Next.js 14 (App Router)</strong> · <strong>Supabase</strong> (PostgreSQL + Auth + Storage + Realtime) · <strong>TypeScript 5</strong> · <strong>Zustand</strong> · <strong>TanStack Query</strong> · <strong>TailwindCSS</strong> · <strong>Chart.js 4</strong> · <strong>jsPDF</strong> · <strong>pptxgenjs</strong> · <strong>xlsx-js-style</strong></div></div>
+
+<div class="page-break"></div>
+
+<!-- ═══════════════ SECTION 2 ═══════════════ -->
+<h1 class="sec" id="s2">2. Database Schema (ERD / Table Structure)</h1>
+<p class="body">All tables are hosted in Supabase (PostgreSQL 15). UUIDs are used for all primary keys. Row-Level Security (RLS) policies are applied at the database level to enforce access control independently of the application layer.</p>
+
+<h2 class="sub">2.1 &nbsp;users</h2>
+<p class="body">Extends <code>auth.users</code>. Stores application-level profile, role, and division access configuration.</p>
+<div class="tbl-wrap"><table>
+  <thead><tr><th>Column</th><th>Type</th><th>Constraint</th><th>Description</th></tr></thead>
+  <tbody>
+    <tr><td class="mono">id</td><td>UUID</td><td>PK, FK → auth.users</td><td>Supabase auth user ID</td></tr>
+    <tr><td class="mono">email</td><td>VARCHAR(255)</td><td>NOT NULL, UNIQUE</td><td>Work email address</td></tr>
+    <tr><td class="mono">full_name</td><td>VARCHAR(255)</td><td>NOT NULL</td><td>Display name</td></tr>
+    <tr><td class="mono">role</td><td>ENUM</td><td>NOT NULL, DEFAULT 'viewer'</td><td>admin | manager | viewer</td></tr>
+    <tr><td class="mono">division_access</td><td>TEXT[]</td><td>DEFAULT '{}'</td><td>Specific divisions the viewer can read</td></tr>
+    <tr><td class="mono">is_active</td><td>BOOLEAN</td><td>DEFAULT true</td><td>Soft-disable without deleting the row</td></tr>
+    <tr><td class="mono">invited_by</td><td>UUID</td><td>FK → users.id, NULL</td><td>Admin who granted access</td></tr>
+    <tr><td class="mono">created_at</td><td>TIMESTAMPTZ</td><td>DEFAULT now()</td><td>Account creation timestamp</td></tr>
+    <tr><td class="mono">updated_at</td><td>TIMESTAMPTZ</td><td>DEFAULT now()</td><td>Last profile update</td></tr>
+  </tbody>
+</table></div>
+
+<h2 class="sub">2.2 &nbsp;divisions</h2>
+<p class="body">Master list of procurement divisions. "Combine" is a virtual division computed at query time — it is NOT stored as rows.</p>
+<div class="tbl-wrap"><table>
+  <thead><tr><th>Column</th><th>Type</th><th>Constraint</th><th>Description</th></tr></thead>
+  <tbody>
+    <tr><td class="mono">id</td><td>UUID</td><td>PK</td><td>Division identifier</td></tr>
+    <tr><td class="mono">code</td><td>VARCHAR(50)</td><td>NOT NULL, UNIQUE</td><td>SMM, SUN, OliveLink</td></tr>
+    <tr><td class="mono">name</td><td>VARCHAR(255)</td><td>NOT NULL</td><td>Full display name</td></tr>
+    <tr><td class="mono">is_virtual</td><td>BOOLEAN</td><td>DEFAULT false</td><td>True for Combine (computed aggregate)</td></tr>
+    <tr><td class="mono">parent_id</td><td>UUID</td><td>FK → divisions.id, NULL</td><td>For future sub-division nesting</td></tr>
+    <tr><td class="mono">created_at</td><td>TIMESTAMPTZ</td><td>DEFAULT now()</td><td></td></tr>
+  </tbody>
+</table></div>
+
+<h2 class="sub">2.3 &nbsp;periods</h2>
+<p class="body">Master calendar of reporting periods. FY rows are aggregate markers; YTD rows carry a <code>ytd_through_q</code> flag.</p>
+<div class="tbl-wrap"><table>
+  <thead><tr><th>Column</th><th>Type</th><th>Constraint</th><th>Description</th></tr></thead>
+  <tbody>
+    <tr><td class="mono">id</td><td>UUID</td><td>PK</td><td></td></tr>
+    <tr><td class="mono">label</td><td>VARCHAR(20)</td><td>NOT NULL, UNIQUE</td><td>Q1 2025, FY 2025, YTD Q2 2026, etc.</td></tr>
+    <tr><td class="mono">year</td><td>SMALLINT</td><td>NOT NULL</td><td>2022–2030</td></tr>
+    <tr><td class="mono">quarter</td><td>SMALLINT</td><td>NULL (1–4)</td><td>NULL for FY rows</td></tr>
+    <tr><td class="mono">is_fy</td><td>BOOLEAN</td><td>DEFAULT false</td><td>Full-year aggregate</td></tr>
+    <tr><td class="mono">is_ytd</td><td>BOOLEAN</td><td>DEFAULT false</td><td>Year-to-date partial year</td></tr>
+    <tr><td class="mono">ytd_through_q</td><td>SMALLINT</td><td>NULL</td><td>e.g. 2 for YTD Q2</td></tr>
+    <tr><td class="mono">sort_order</td><td>INTEGER</td><td>NOT NULL</td><td>Chronological display order</td></tr>
+  </tbody>
+</table></div>
+
+<h2 class="sub">2.4 &nbsp;pnl_data <span style="color:#0e7490;font-size:13px;font-weight:400;">(Core Fact Table)</span></h2>
+<p class="body">One row per <strong>division × period × record_type</strong>. This is the primary source for all P&L calculations. <code>net_value_creation</code> and <code>roi_pct</code> are PostgreSQL generated columns — always consistent.</p>
+<div class="tbl-wrap"><table>
+  <thead><tr><th>Column</th><th>Type</th><th>Constraint</th><th>Description</th></tr></thead>
+  <tbody>
+    <tr><td class="mono">id</td><td>UUID</td><td>PK</td><td></td></tr>
+    <tr><td class="mono">division_id</td><td>UUID</td><td>FK → divisions.id, NOT NULL</td><td>Division reference</td></tr>
+    <tr><td class="mono">period_id</td><td>UUID</td><td>FK → periods.id, NOT NULL</td><td>Period reference</td></tr>
+    <tr><td class="mono">record_type</td><td>ENUM</td><td>NOT NULL</td><td>'actual' | 'budget'</td></tr>
+    <tr><td class="mono">cost_saving</td><td>NUMERIC(12,4)</td><td>DEFAULT 0</td><td>USD Million</td></tr>
+    <tr><td class="mono">cost_avoidance</td><td>NUMERIC(12,4)</td><td>DEFAULT 0</td><td>USD Million</td></tr>
+    <tr><td class="mono">total_value_creation</td><td>NUMERIC(12,4)</td><td>DEFAULT 0</td><td>cost_saving + cost_avoidance</td></tr>
+    <tr><td class="mono">initial_sum</td><td>NUMERIC(12,4)</td><td>DEFAULT 0</td><td>Spend before saving (USD Mn)</td></tr>
+    <tr><td class="mono">sum_after_saving</td><td>NUMERIC(12,4)</td><td>DEFAULT 0</td><td>Spend after saving</td></tr>
+    <tr><td class="mono">total_cost_incurred</td><td>NUMERIC(12,4)</td><td>DEFAULT 0</td><td>Sum of 15 cost components</td></tr>
+    <tr><td class="mono">net_value_creation</td><td>NUMERIC(12,4)</td><td>GENERATED</td><td>total_value_creation − total_cost_incurred</td></tr>
+    <tr><td class="mono">roi_pct</td><td>NUMERIC(8,4)</td><td>GENERATED</td><td>net_value_creation / total_cost_incurred × 100</td></tr>
+    <tr><td class="mono">value_to_sum_pct</td><td>NUMERIC(8,4)</td><td>GENERATED</td><td>total_value_creation / initial_sum × 100</td></tr>
+    <tr><td class="mono">revenue</td><td>NUMERIC(14,4)</td><td>DEFAULT 0</td><td>Division revenue (USD Mn)</td></tr>
+    <tr><td class="mono">gross_profit</td><td>NUMERIC(14,4)</td><td>DEFAULT 0</td><td>Division GP (USD Mn)</td></tr>
+    <tr><td class="mono">uploaded_by</td><td>UUID</td><td>FK → users.id</td><td>Who loaded this data</td></tr>
+    <tr><td class="mono">source_file</td><td>VARCHAR(500)</td><td>NULL</td><td>Original filename reference</td></tr>
+    <tr><td class="mono">created_at</td><td>TIMESTAMPTZ</td><td>DEFAULT now()</td><td></td></tr>
+    <tr><td class="mono">updated_at</td><td>TIMESTAMPTZ</td><td>DEFAULT now()</td><td></td></tr>
+  </tbody>
+</table></div>
+<div class="callout gold"><div class="callout-badge">UNIQUE KEY</div><div class="callout-body">UNIQUE constraint on <code>(division_id, period_id, record_type)</code> — prevents duplicate entries. Upload uses an UPSERT (INSERT … ON CONFLICT DO UPDATE) pattern.</div></div>
+
+<h2 class="sub">2.5 &nbsp;cost_components</h2>
+<p class="body">Stores the 15 individual cost line items per <code>pnl_data</code> row. Normalized to avoid sparse columns in the main fact table.</p>
+<div class="tbl-wrap"><table>
+  <thead><tr><th>Column</th><th>Type</th><th>Constraint</th><th>Description</th></tr></thead>
+  <tbody>
+    <tr><td class="mono">id</td><td>UUID</td><td>PK</td><td></td></tr>
+    <tr><td class="mono">pnl_data_id</td><td>UUID</td><td>FK → pnl_data.id, NOT NULL</td><td>Parent fact row</td></tr>
+    <tr><td class="mono">component_key</td><td>VARCHAR(50)</td><td>NOT NULL</td><td>salaries, it_expense, etc.</td></tr>
+    <tr><td class="mono">component_label</td><td>VARCHAR(100)</td><td>NOT NULL</td><td>Human-readable name (Salaries, IT Expense…)</td></tr>
+    <tr><td class="mono">amount</td><td>NUMERIC(12,4)</td><td>DEFAULT 0</td><td>USD Million</td></tr>
+    <tr><td class="mono">sort_order</td><td>SMALLINT</td><td>DEFAULT 0</td><td>Display order (1–15)</td></tr>
+  </tbody>
+</table></div>
+
+<h2 class="sub">2.6 &nbsp;fx_rates</h2>
+<div class="tbl-wrap"><table>
+  <thead><tr><th>Column</th><th>Type</th><th>Constraint</th><th>Description</th></tr></thead>
+  <tbody>
+    <tr><td class="mono">id</td><td>UUID</td><td>PK</td><td></td></tr>
+    <tr><td class="mono">period_id</td><td>UUID</td><td>FK → periods.id, UNIQUE</td><td>One rate per period</td></tr>
+    <tr><td class="mono">rate_idr_per_usd</td><td>NUMERIC(10,2)</td><td>NOT NULL</td><td>e.g. 16,516.00</td></tr>
+    <tr><td class="mono">rate_date</td><td>DATE</td><td>NOT NULL</td><td>Representative date for period</td></tr>
+    <tr><td class="mono">source</td><td>VARCHAR(100)</td><td>DEFAULT 'BI JISDOR'</td><td>Data source label</td></tr>
+    <tr><td class="mono">fetched_at</td><td>TIMESTAMPTZ</td><td>DEFAULT now()</td><td>When rate was retrieved</td></tr>
+  </tbody>
+</table></div>
+
+<h2 class="sub">2.7 &nbsp;benchmark_peers</h2>
+<div class="tbl-wrap"><table>
+  <thead><tr><th>Column</th><th>Type</th><th>Constraint</th><th>Description</th></tr></thead>
+  <tbody>
+    <tr><td class="mono">id</td><td>UUID</td><td>PK</td><td></td></tr>
+    <tr><td class="mono">division_scope</td><td>VARCHAR(50)</td><td>NOT NULL</td><td>SMM | SUN | OliveLink | All</td></tr>
+    <tr><td class="mono">peer_name</td><td>VARCHAR(255)</td><td>NOT NULL</td><td>e.g. Anglo American, Hackett WC</td></tr>
+    <tr><td class="mono">peer_type</td><td>ENUM</td><td>NOT NULL</td><td>'named' | 'body'</td></tr>
+    <tr><td class="mono">roi_multiple</td><td>NUMERIC(6,2)</td><td>NOT NULL</td><td>e.g. 7.2 (meaning 720% ROI)</td></tr>
+    <tr><td class="mono">source_label</td><td>VARCHAR(255)</td><td>NOT NULL</td><td>Publication name</td></tr>
+    <tr><td class="mono">source_url</td><td>VARCHAR(500)</td><td>NULL</td><td>Link to source</td></tr>
+    <tr><td class="mono">note</td><td>TEXT</td><td>NULL</td><td>Methodology note</td></tr>
+    <tr><td class="mono">is_active</td><td>BOOLEAN</td><td>DEFAULT true</td><td>Show/hide in Peer Parity tab</td></tr>
+  </tbody>
+</table></div>
+
+<h2 class="sub">2.8 &nbsp;user_sessions (Audit Log)</h2>
+<div class="tbl-wrap"><table>
+  <thead><tr><th>Column</th><th>Type</th><th>Constraint</th><th>Description</th></tr></thead>
+  <tbody>
+    <tr><td class="mono">id</td><td>UUID</td><td>PK</td><td></td></tr>
+    <tr><td class="mono">user_id</td><td>UUID</td><td>FK → users.id, NOT NULL</td><td>Who performed the action</td></tr>
+    <tr><td class="mono">action_type</td><td>VARCHAR(100)</td><td>NOT NULL</td><td>login, upload, export, view_tab, etc.</td></tr>
+    <tr><td class="mono">payload</td><td>JSONB</td><td>NULL</td><td>Action-specific metadata (filters, filename, etc.)</td></tr>
+    <tr><td class="mono">ip_address</td><td>INET</td><td>NULL</td><td>Client IP for audit trail</td></tr>
+    <tr><td class="mono">created_at</td><td>TIMESTAMPTZ</td><td>DEFAULT now()</td><td></td></tr>
+  </tbody>
+</table></div>
+
+<h2 class="sub">2.9 &nbsp;data_uploads</h2>
+<div class="tbl-wrap"><table>
+  <thead><tr><th>Column</th><th>Type</th><th>Constraint</th><th>Description</th></tr></thead>
+  <tbody>
+    <tr><td class="mono">id</td><td>UUID</td><td>PK</td><td></td></tr>
+    <tr><td class="mono">uploaded_by</td><td>UUID</td><td>FK → users.id</td><td>Uploader</td></tr>
+    <tr><td class="mono">filename</td><td>VARCHAR(500)</td><td>NOT NULL</td><td>Original file name</td></tr>
+    <tr><td class="mono">storage_path</td><td>VARCHAR(1000)</td><td>NULL</td><td>Supabase Storage path for raw file</td></tr>
+    <tr><td class="mono">rows_processed</td><td>INTEGER</td><td>DEFAULT 0</td><td>Total rows parsed from Database sheet</td></tr>
+    <tr><td class="mono">divisions_updated</td><td>TEXT[]</td><td>DEFAULT '{}'</td><td>e.g. ['SMM','SUN']</td></tr>
+    <tr><td class="mono">periods_updated</td><td>TEXT[]</td><td>DEFAULT '{}'</td><td>e.g. ['Q1 2026','Q2 2026']</td></tr>
+    <tr><td class="mono">status</td><td>ENUM</td><td>DEFAULT 'processing'</td><td>processing | success | failed</td></tr>
+    <tr><td class="mono">error_message</td><td>TEXT</td><td>NULL</td><td>Parse error details if failed</td></tr>
+    <tr><td class="mono">created_at</td><td>TIMESTAMPTZ</td><td>DEFAULT now()</td><td></td></tr>
+  </tbody>
+</table></div>
+
+<h2 class="sub">2.10 &nbsp;ai_chat_history</h2>
+<div class="tbl-wrap"><table>
+  <thead><tr><th>Column</th><th>Type</th><th>Constraint</th><th>Description</th></tr></thead>
+  <tbody>
+    <tr><td class="mono">id</td><td>UUID</td><td>PK</td><td></td></tr>
+    <tr><td class="mono">user_id</td><td>UUID</td><td>FK → users.id, NOT NULL</td><td>Conversation owner</td></tr>
+    <tr><td class="mono">session_id</td><td>UUID</td><td>NOT NULL</td><td>Groups messages in one conversation</td></tr>
+    <tr><td class="mono">role</td><td>ENUM</td><td>NOT NULL</td><td>'user' | 'assistant'</td></tr>
+    <tr><td class="mono">content</td><td>TEXT</td><td>NOT NULL</td><td>Message text</td></tr>
+    <tr><td class="mono">filter_context</td><td>JSONB</td><td>NULL</td><td>Active division/year/period/currency at send time</td></tr>
+    <tr><td class="mono">created_at</td><td>TIMESTAMPTZ</td><td>DEFAULT now()</td><td></td></tr>
+  </tbody>
+</table></div>
+
+<h2 class="sub">2.11 &nbsp;dashboard_preferences</h2>
+<div class="tbl-wrap"><table>
+  <thead><tr><th>Column</th><th>Type</th><th>Constraint</th><th>Description</th></tr></thead>
+  <tbody>
+    <tr><td class="mono">id</td><td>UUID</td><td>PK</td><td></td></tr>
+    <tr><td class="mono">user_id</td><td>UUID</td><td>FK → users.id, UNIQUE</td><td>One row per user</td></tr>
+    <tr><td class="mono">theme</td><td>VARCHAR(30)</td><td>DEFAULT 'dark'</td><td>dark|minimalist|glass|neo|bento|etc.</td></tr>
+    <tr><td class="mono">currency</td><td>CHAR(3)</td><td>DEFAULT 'USD'</td><td>USD or IDR</td></tr>
+    <tr><td class="mono">default_division</td><td>VARCHAR(50)</td><td>DEFAULT 'Combine'</td><td></td></tr>
+    <tr><td class="mono">default_year</td><td>VARCHAR(10)</td><td>DEFAULT 'All'</td><td></td></tr>
+    <tr><td class="mono">default_quarter</td><td>VARCHAR(10)</td><td>DEFAULT 'All'</td><td></td></tr>
+    <tr><td class="mono">chart_metric</td><td>VARCHAR(20)</td><td>DEFAULT 'sum'</td><td>sum|vc|nvc|cost</td></tr>
+    <tr><td class="mono">pnlrep_mode</td><td>VARCHAR(10)</td><td>DEFAULT 'both'</td><td>actual|budget|both</td></tr>
+    <tr><td class="mono">updated_at</td><td>TIMESTAMPTZ</td><td>DEFAULT now()</td><td></td></tr>
+  </tbody>
+</table></div>
+
+<h2 class="sub">2.12 &nbsp;Table Relationships Summary</h2>
+<div class="tbl-wrap"><table>
+  <thead><tr><th>From Table</th><th>Relationship</th><th>To Table</th><th>Via Column</th></tr></thead>
+  <tbody>
+    <tr><td>users</td><td class="center">1 : 1</td><td>dashboard_preferences</td><td class="mono">user_id</td></tr>
+    <tr><td>users</td><td class="center">1 : N</td><td>user_sessions</td><td class="mono">user_id</td></tr>
+    <tr><td>users</td><td class="center">1 : N</td><td>data_uploads</td><td class="mono">uploaded_by</td></tr>
+    <tr><td>users</td><td class="center">1 : N</td><td>pnl_data</td><td class="mono">uploaded_by</td></tr>
+    <tr><td>users</td><td class="center">1 : N</td><td>ai_chat_history</td><td class="mono">user_id</td></tr>
+    <tr><td>divisions</td><td class="center">1 : N</td><td>pnl_data</td><td class="mono">division_id</td></tr>
+    <tr><td>periods</td><td class="center">1 : N</td><td>pnl_data</td><td class="mono">period_id</td></tr>
+    <tr><td>periods</td><td class="center">1 : 1</td><td>fx_rates</td><td class="mono">period_id</td></tr>
+    <tr><td>pnl_data</td><td class="center">1 : N</td><td>cost_components</td><td class="mono">pnl_data_id</td></tr>
+  </tbody>
+</table></div>
+
+<div class="page-break"></div>
+
+<!-- ═══════════════ SECTION 3 ═══════════════ -->
+<h1 class="sec" id="s3">3. Data Flow Requirements (CRUD API)</h1>
+<p class="body">The application uses Supabase's auto-generated REST API (PostgREST) for standard CRUD operations, supplemented by Next.js API Route Handlers for complex operations — file parsing, AI proxying, and export generation. All endpoints require a valid Supabase JWT in the <code>Authorization: Bearer &lt;token&gt;</code> header.</p>
+
+<h2 class="sub">3.1 &nbsp;Authentication</h2>
+<div class="tbl-wrap"><table>
+  <thead><tr><th>Method</th><th>Endpoint</th><th>Action</th><th>Role</th></tr></thead>
+  <tbody>
+    <tr><td>POST</td><td class="mono">/auth/sign-in</td><td>Email + password login → returns JWT</td><td>Public</td></tr>
+    <tr><td>POST</td><td class="mono">/auth/sign-out</td><td>Invalidate active session token</td><td>Any</td></tr>
+    <tr><td>POST</td><td class="mono">/auth/refresh</td><td>Refresh expired JWT using refresh token</td><td>Any</td></tr>
+    <tr><td>POST</td><td class="mono">/auth/invite</td><td>Send invite email to a new user</td><td>Admin</td></tr>
+    <tr><td>PATCH</td><td class="mono">/auth/user</td><td>Update own password or email</td><td>Any</td></tr>
+  </tbody>
+</table></div>
+
+<h2 class="sub">3.2 &nbsp;P&L Data</h2>
+<div class="tbl-wrap"><table>
+  <thead><tr><th>Method</th><th>Endpoint</th><th>Action</th><th>Role</th></tr></thead>
+  <tbody>
+    <tr><td>GET</td><td class="mono">/api/pnl?division=&year=&quarter=&type=</td><td>Fetch filtered P&L rows + cost components</td><td>Viewer+</td></tr>
+    <tr><td>GET</td><td class="mono">/api/pnl/periods</td><td>List all available periods with data</td><td>Viewer+</td></tr>
+    <tr><td>GET</td><td class="mono">/api/pnl/summary?division=&periods=</td><td>Aggregated KPIs (NVC, ROI, VSR) for scope</td><td>Viewer+</td></tr>
+    <tr><td>POST</td><td class="mono">/api/pnl/upload</td><td>Parse uploaded XLSX and upsert all rows</td><td>Admin</td></tr>
+    <tr><td>PUT</td><td class="mono">/api/pnl/:id</td><td>Manually correct a single P&L row</td><td>Admin</td></tr>
+    <tr><td>DELETE</td><td class="mono">/api/pnl/:id</td><td>Soft-delete a P&L row</td><td>Admin</td></tr>
+    <tr><td>GET</td><td class="mono">/api/pnl/export/xlsx</td><td>Generate Excel export for current filter</td><td>Manager+</td></tr>
+    <tr><td>GET</td><td class="mono">/api/pnl/export/pdf</td><td>Generate formatted PDF report</td><td>Manager+</td></tr>
+    <tr><td>GET</td><td class="mono">/api/pnl/export/pptx</td><td>Generate PowerPoint deck with charts</td><td>Manager+</td></tr>
+  </tbody>
+</table></div>
+
+<h2 class="sub">3.3 &nbsp;FX Rates</h2>
+<div class="tbl-wrap"><table>
+  <thead><tr><th>Method</th><th>Endpoint</th><th>Action</th><th>Role</th></tr></thead>
+  <tbody>
+    <tr><td>GET</td><td class="mono">/api/fx/rates</td><td>All periods with BI JISDOR rates</td><td>Viewer+</td></tr>
+    <tr><td>GET</td><td class="mono">/api/fx/live</td><td>Fetch live rate from open.er-api.com (proxied server-side)</td><td>Viewer+</td></tr>
+    <tr><td>POST</td><td class="mono">/api/fx/rates</td><td>Upsert rate for a period</td><td>Admin</td></tr>
+    <tr><td>PUT</td><td class="mono">/api/fx/rates/:period_id</td><td>Correct a historical BI JISDOR rate</td><td>Admin</td></tr>
+  </tbody>
+</table></div>
+
+<h2 class="sub">3.4 &nbsp;Users & Permissions</h2>
+<div class="tbl-wrap"><table>
+  <thead><tr><th>Method</th><th>Endpoint</th><th>Action</th><th>Role</th></tr></thead>
+  <tbody>
+    <tr><td>GET</td><td class="mono">/api/users</td><td>List all users with roles and access</td><td>Admin</td></tr>
+    <tr><td>POST</td><td class="mono">/api/users</td><td>Create user + send invite email</td><td>Admin</td></tr>
+    <tr><td>PATCH</td><td class="mono">/api/users/:id</td><td>Update role or division_access array</td><td>Admin</td></tr>
+    <tr><td>DELETE</td><td class="mono">/api/users/:id</td><td>Deactivate user (is_active = false)</td><td>Admin</td></tr>
+    <tr><td>GET</td><td class="mono">/api/users/me</td><td>Fetch own profile + current preferences</td><td>Any</td></tr>
+    <tr><td>PATCH</td><td class="mono">/api/users/me/preferences</td><td>Save theme, currency, filter defaults</td><td>Any</td></tr>
+    <tr><td>GET</td><td class="mono">/api/users/activity?page=</td><td>Paginated audit log</td><td>Admin</td></tr>
+  </tbody>
+</table></div>
+
+<h2 class="sub">3.5 &nbsp;AI Assistant</h2>
+<div class="tbl-wrap"><table>
+  <thead><tr><th>Method</th><th>Endpoint</th><th>Action</th><th>Role</th></tr></thead>
+  <tbody>
+    <tr><td>POST</td><td class="mono">/api/ai/chat</td><td>Proxy to Anthropic API with P&L context injected</td><td>Viewer+</td></tr>
+    <tr><td>GET</td><td class="mono">/api/ai/history?session_id=</td><td>Fetch messages for a conversation session</td><td>Own only</td></tr>
+    <tr><td>DELETE</td><td class="mono">/api/ai/history/:session_id</td><td>Clear conversation history</td><td>Own only</td></tr>
+  </tbody>
+</table></div>
+
+<h2 class="sub">3.6 &nbsp;Peer Benchmarks</h2>
+<div class="tbl-wrap"><table>
+  <thead><tr><th>Method</th><th>Endpoint</th><th>Action</th><th>Role</th></tr></thead>
+  <tbody>
+    <tr><td>GET</td><td class="mono">/api/peers?division=</td><td>Fetch peer benchmarks for a division</td><td>Viewer+</td></tr>
+    <tr><td>POST</td><td class="mono">/api/peers</td><td>Add a new benchmark peer</td><td>Admin</td></tr>
+    <tr><td>PUT</td><td class="mono">/api/peers/:id</td><td>Update peer data or ROI multiple</td><td>Admin</td></tr>
+    <tr><td>DELETE</td><td class="mono">/api/peers/:id</td><td>Hide or remove a peer</td><td>Admin</td></tr>
+  </tbody>
+</table></div>
+
+<div class="page-break"></div>
+
+<!-- ═══════════════ SECTION 4 ═══════════════ -->
+<h1 class="sec" id="s4">4. Authentication & Access Control (RBAC)</h1>
+<p class="body">Authentication is handled by Supabase Auth (email/password + magic link). Authorization is enforced at two independent layers: PostgreSQL Row-Level Security (RLS) and Next.js middleware route guards.</p>
+
+<h2 class="sub">4.1 &nbsp;Role Definitions</h2>
+<div class="tbl-wrap"><table>
+  <thead><tr><th>Role</th><th>Permissions</th><th>Typical User</th></tr></thead>
+  <tbody>
+    <tr><td><strong>admin</strong></td><td>Full read + write across all divisions. Manage users, upload data, correct FX rates, view audit log.</td><td>CFO, System Owner</td></tr>
+    <tr><td><strong>manager</strong></td><td>Read-only access to all divisions. Can export Excel/PDF/PPT. Cannot upload files or manage users.</td><td>Procurement Lead, Finance Director</td></tr>
+    <tr><td><strong>viewer</strong></td><td>Read-only access to Combine division only (or specific divisions in division_access). No export.</td><td>Board Member, Stakeholder</td></tr>
+  </tbody>
+</table></div>
+
+<h2 class="sub">4.2 &nbsp;Page-Level Access Matrix</h2>
+<div class="tbl-wrap"><table>
+  <thead><tr><th>Page / Tab</th><th>Public</th><th>Viewer</th><th>Manager</th><th>Admin</th></tr></thead>
+  <tbody>
+    <tr><td>Login / Invite Accept</td><td class="center green">✓</td><td></td><td></td><td></td></tr>
+    <tr><td>Dashboard KPI Strip</td><td></td><td class="center green">✓</td><td class="center green">✓</td><td class="center green">✓</td></tr>
+    <tr><td>Actual vs Target tab</td><td></td><td class="center">✓ *</td><td class="center green">✓</td><td class="center green">✓</td></tr>
+    <tr><td>P&L + ROI tab</td><td></td><td class="center">✓ *</td><td class="center green">✓</td><td class="center green">✓</td></tr>
+    <tr><td>P&L + ROI Report tab</td><td></td><td class="center">✓ *</td><td class="center green">✓</td><td class="center green">✓</td></tr>
+    <tr><td>Charts tab</td><td></td><td class="center">✓ *</td><td class="center green">✓</td><td class="center green">✓</td></tr>
+    <tr><td>BI FX Rates tab</td><td></td><td class="center green">✓</td><td class="center green">✓</td><td class="center green">✓</td></tr>
+    <tr><td>YoY Comparison tab</td><td></td><td class="center">✓ *</td><td class="center green">✓</td><td class="center green">✓</td></tr>
+    <tr><td>Insights tab</td><td></td><td class="center">✓ *</td><td class="center green">✓</td><td class="center green">✓</td></tr>
+    <tr><td>Ratio to Revenue & GP</td><td></td><td class="center">✓ *</td><td class="center green">✓</td><td class="center green">✓</td></tr>
+    <tr><td>Peer Parity Engine</td><td></td><td class="center">✓ *</td><td class="center green">✓</td><td class="center green">✓</td></tr>
+    <tr><td>Permissions tab</td><td></td><td></td><td></td><td class="center green">✓</td></tr>
+    <tr><td>AI Assistant tab</td><td></td><td class="center green">✓</td><td class="center green">✓</td><td class="center green">✓</td></tr>
+    <tr><td>Upload XLS button</td><td></td><td></td><td></td><td class="center green">✓</td></tr>
+    <tr><td>Download Excel/PDF/PPT</td><td></td><td></td><td class="center green">✓</td><td class="center green">✓</td></tr>
+    <tr><td>Edit FX Rates manually</td><td></td><td></td><td></td><td class="center green">✓</td></tr>
+    <tr><td>Add / Remove Users</td><td></td><td></td><td></td><td class="center green">✓</td></tr>
+  </tbody>
+</table></div>
+<p class="body" style="color:#b45309;">* Viewer sees Combine division only, unless specific divisions are listed in their division_access array.</p>
+
+<h2 class="sub">4.3 &nbsp;Row-Level Security (RLS) Policies</h2>
+<div class="tbl-wrap"><table>
+  <thead><tr><th>Table</th><th>Policy Name</th><th>Rule</th></tr></thead>
+  <tbody>
+    <tr><td>pnl_data</td><td>viewer_combine_only</td><td>Viewers SELECT only where division.code = 'Combine' OR division.id = ANY(user.division_access)</td></tr>
+    <tr><td>pnl_data</td><td>manager_read_all</td><td>Managers can SELECT all rows</td></tr>
+    <tr><td>pnl_data</td><td>admin_full</td><td>Admins can SELECT, INSERT, UPDATE, DELETE all rows</td></tr>
+    <tr><td>users</td><td>own_profile</td><td>Any role can SELECT/UPDATE their own row where id = auth.uid()</td></tr>
+    <tr><td>users</td><td>admin_manage</td><td>Admins can SELECT/INSERT/UPDATE/DELETE all user rows</td></tr>
+    <tr><td>ai_chat_history</td><td>own_history</td><td>Users can only SELECT/INSERT rows where user_id = auth.uid()</td></tr>
+    <tr><td>dashboard_preferences</td><td>own_prefs</td><td>Users can only SELECT/UPDATE rows where user_id = auth.uid()</td></tr>
+    <tr><td>user_sessions</td><td>admin_audit</td><td>Admins SELECT all; users SELECT only own rows</td></tr>
+  </tbody>
+</table></div>
+
+<div class="page-break"></div>
+
+<!-- ═══════════════ SECTION 5 ═══════════════ -->
+<h1 class="sec" id="s5">5. State Management</h1>
+<p class="body">Global client-side state is managed with <strong>Zustand</strong> (lightweight, no boilerplate). Server state — data fetching, caching, background refresh — is handled by <strong>TanStack Query (React Query v5)</strong>. Supabase Realtime is used for live FX rate updates without polling.</p>
+
+<h2 class="sub">5.1 &nbsp;Zustand Store Slices</h2>
+
+<h3 class="sub3">authSlice</h3>
+<div class="tbl-wrap"><table>
+  <thead><tr><th>State Key</th><th>Type</th><th>Description</th></tr></thead>
+  <tbody>
+    <tr><td class="mono">user</td><td>User | null</td><td>Currently authenticated Supabase user object</td></tr>
+    <tr><td class="mono">role</td><td>admin|manager|viewer|null</td><td>Active role used for UI gating</td></tr>
+    <tr><td class="mono">divisionAccess</td><td>string[]</td><td>Divisions this user can see (from users.division_access)</td></tr>
+    <tr><td class="mono">isLoading</td><td>boolean</td><td>Auth state loading during hydration</td></tr>
+    <tr><td class="mono">session</td><td>Session | null</td><td>Supabase session (JWT + refresh token)</td></tr>
+  </tbody>
+</table></div>
+
+<h3 class="sub3">filterSlice</h3>
+<div class="tbl-wrap"><table>
+  <thead><tr><th>State Key</th><th>Type</th><th>Description</th></tr></thead>
+  <tbody>
+    <tr><td class="mono">division</td><td>string</td><td>Active division: Combine | SMM | SUN | OliveLink</td></tr>
+    <tr><td class="mono">year</td><td>string</td><td>Active year: All | 2022–2026</td></tr>
+    <tr><td class="mono">quarter</td><td>string</td><td>Active period: All | Q1–Q4 | FY | YTDQ2 | YTDQ3</td></tr>
+    <tr><td class="mono">currency</td><td>'USD'|'IDR'</td><td>Active currency mode for display</td></tr>
+    <tr><td class="mono">chartMetric</td><td>'sum'|'vc'|'nvc'|'cost'</td><td>Active metric shown in BCG Charts tab</td></tr>
+    <tr><td class="mono">pnlRepMode</td><td>'actual'|'budget'|'both'</td><td>P&L + ROI Report view mode</td></tr>
+    <tr><td class="mono">theme</td><td>string</td><td>Active UI theme (dark|minimalist|glass|neo|bento…)</td></tr>
+  </tbody>
+</table></div>
+
+<h3 class="sub3">dataSlice</h3>
+<div class="tbl-wrap"><table>
+  <thead><tr><th>State Key</th><th>Type</th><th>Description</th></tr></thead>
+  <tbody>
+    <tr><td class="mono">pnlData</td><td>Record&lt;string, PnLRow&gt;</td><td>Normalized P&L rows keyed by division+period+type</td></tr>
+    <tr><td class="mono">fxRates</td><td>Record&lt;string, number&gt;</td><td>Period label → IDR/USD rate map</td></tr>
+    <tr><td class="mono">liveRate</td><td>number</td><td>Most recent live BI rate from er-api.com</td></tr>
+    <tr><td class="mono">lastUpload</td><td>UploadMeta | null</td><td>Metadata of most recent file upload</td></tr>
+    <tr><td class="mono">isUploading</td><td>boolean</td><td>XLS upload in progress flag</td></tr>
+  </tbody>
+</table></div>
+
+<h3 class="sub3">uiSlice</h3>
+<div class="tbl-wrap"><table>
+  <thead><tr><th>State Key</th><th>Type</th><th>Description</th></tr></thead>
+  <tbody>
+    <tr><td class="mono">activeTab</td><td>string</td><td>Currently visible tab ID</td></tr>
+    <tr><td class="mono">isLoadingOverlay</td><td>boolean</td><td>Full-screen loading spinner visible</td></tr>
+    <tr><td class="mono">loadingMessage</td><td>string</td><td>Text shown in loading overlay</td></tr>
+    <tr><td class="mono">toasts</td><td>Toast[]</td><td>Queue of active toast notifications</td></tr>
+    <tr><td class="mono">chatHistory</td><td>Message[]</td><td>Current AI chat session messages</td></tr>
+    <tr><td class="mono">chatSessionId</td><td>string | null</td><td>Active conversation UUID for persistence</td></tr>
+    <tr><td class="mono">peerDivision</td><td>string</td><td>Active division in Peer Parity tab</td></tr>
+    <tr><td class="mono">yoyBase</td><td>string</td><td>YoY base period selection</td></tr>
+    <tr><td class="mono">yoyCompare</td><td>string</td><td>YoY compare period selection</td></tr>
+  </tbody>
+</table></div>
+
+<h2 class="sub">5.2 &nbsp;TanStack Query Configuration</h2>
+<div class="tbl-wrap"><table>
+  <thead><tr><th>Query Key</th><th>Endpoint</th><th>Stale Time</th><th>Notes</th></tr></thead>
+  <tbody>
+    <tr><td class="mono">['pnl', division, year, quarter]</td><td class="mono">/api/pnl</td><td>5 min</td><td>Re-fetches automatically on filter change</td></tr>
+    <tr><td class="mono">['fx-rates']</td><td class="mono">/api/fx/rates</td><td>1 hour</td><td>Historical rates rarely change</td></tr>
+    <tr><td class="mono">['fx-live']</td><td class="mono">/api/fx/live</td><td>5 min</td><td>Auto-refresh for live rate KPI card</td></tr>
+    <tr><td class="mono">['users']</td><td class="mono">/api/users</td><td>2 min</td><td>Admin only; invalidated on user CRUD</td></tr>
+    <tr><td class="mono">['peers', division]</td><td class="mono">/api/peers</td><td>30 min</td><td>Benchmark data is mostly static</td></tr>
+    <tr><td class="mono">['ai-history', sessionId]</td><td class="mono">/api/ai/history</td><td>0</td><td>Always fetch fresh (staleTime: 0)</td></tr>
+    <tr><td class="mono">['my-preferences']</td><td class="mono">/api/users/me/preferences</td><td>10 min</td><td>Hydrates Zustand filterSlice on load</td></tr>
+  </tbody>
+</table></div>
+
+<div class="page-break"></div>
+
+<!-- ═══════════════ SECTION 6 ═══════════════ -->
+<h1 class="sec" id="s6">6. Features & Third-Party Integrations</h1>
+
+<h2 class="sub">6.1 &nbsp;Core Infrastructure</h2>
+<div class="tbl-wrap"><table>
+  <thead><tr><th>Service</th><th>Purpose</th><th>Est. Cost</th></tr></thead>
+  <tbody>
+    <tr><td><strong>Supabase</strong></td><td>PostgreSQL DB + Auth + Storage + Realtime + RLS policies</td><td>Pro ~$25/mo</td></tr>
+    <tr><td><strong>Vercel</strong></td><td>Next.js hosting, edge functions, CI/CD from GitHub, preview deployments</td><td>Pro ~$20/mo</td></tr>
+    <tr><td><strong>GitHub</strong></td><td>Source control, PR reviews, branch protection, Actions CI</td><td>Free / Team</td></tr>
+  </tbody>
+</table></div>
+
+<h2 class="sub">6.2 &nbsp;AI Integration — Anthropic Claude</h2>
+<div class="tbl-wrap"><table>
+  <thead><tr><th>Parameter</th><th>Value</th></tr></thead>
+  <tbody>
+    <tr><td>Model</td><td>claude-sonnet-4-5 (upgradeable to claude-opus-4-6 for deeper analysis)</td></tr>
+    <tr><td>Max tokens per response</td><td>1,000 (configurable per query type)</td></tr>
+    <tr><td>System prompt strategy</td><td>Dynamically built from current filter scope + live pnl_data snapshot injected server-side</td></tr>
+    <tr><td>API key location</td><td>Server-only Next.js API Route — never exposed to the browser</td></tr>
+    <tr><td>Offline fallback</td><td>Deterministic local summary built from aggregated pnl_data (no API cost)</td></tr>
+    <tr><td>Estimated cost</td><td>~$0.003 per query at Sonnet pricing (varies with context size)</td></tr>
+  </tbody>
+</table></div>
+
+<h2 class="sub">6.3 &nbsp;FX Rate Service — Bank Indonesia JISDOR</h2>
+<div class="tbl-wrap"><table>
+  <thead><tr><th>Parameter</th><th>Value</th></tr></thead>
+  <tbody>
+    <tr><td>Provider</td><td>open.er-api.com (free tier, proxied server-side to hide key)</td></tr>
+    <tr><td>Refresh interval</td><td>Every 5 minutes via TanStack Query + Supabase Realtime broadcast</td></tr>
+    <tr><td>Fallback</td><td>Last known rate stored in fx_rates table; served instantly from Supabase</td></tr>
+    <tr><td>Historical rates</td><td>Seeded into fx_rates at launch; admin-editable if BI announces corrections</td></tr>
+    <tr><td>ISR caching</td><td>Next.js revalidate: 300 for FX endpoint (5 min stale-while-revalidate)</td></tr>
+  </tbody>
+</table></div>
+
+<h2 class="sub">6.4 &nbsp;File Upload & Storage</h2>
+<div class="tbl-wrap"><table>
+  <thead><tr><th>Parameter</th><th>Value</th></tr></thead>
+  <tbody>
+    <tr><td>Upload handler</td><td>Next.js API Route — multipart/form-data → xlsx-js-style parser → Supabase upsert</td></tr>
+    <tr><td>File storage</td><td>Supabase Storage bucket: <code>procurement-uploads</code> (private, signed URLs)</td></tr>
+    <tr><td>Retention policy</td><td>Raw files kept 90 days; parsed data persists indefinitely in pnl_data</td></tr>
+    <tr><td>Max file size</td><td>10 MB (configurable in Next.js config and Supabase bucket policy)</td></tr>
+    <tr><td>Supported formats</td><td>.xlsx, .xls, .xlsb, .csv</td></tr>
+    <tr><td>Validation</td><td>Header matching, numeric type checking, duplicate detection before upsert</td></tr>
+  </tbody>
+</table></div>
+
+<h2 class="sub">6.5 &nbsp;Export Libraries</h2>
+<div class="tbl-wrap"><table>
+  <thead><tr><th>Library</th><th>Version</th><th>Usage</th></tr></thead>
+  <tbody>
+    <tr><td>xlsx-js-style</td><td>1.2.0</td><td>Excel export with full cell styling — colors, borders, fonts, number formats</td></tr>
+    <tr><td>jsPDF</td><td>2.5.1</td><td>PDF report — P&L Report, board summary, BCG-style layout with colored rows</td></tr>
+    <tr><td>pptxgenjs</td><td>3.12.0</td><td>PowerPoint deck with Chart.js canvas images embedded as PNG slides</td></tr>
+    <tr><td>Chart.js</td><td>4.4.1</td><td>All dashboard charts — BCG dual panel (bar+line), ROI trend, Achievement Multiplier</td></tr>
+  </tbody>
+</table></div>
+
+<h2 class="sub">6.6 &nbsp;Email Service</h2>
+<div class="tbl-wrap"><table>
+  <thead><tr><th>Parameter</th><th>Value</th></tr></thead>
+  <tbody>
+    <tr><td>Provider</td><td>Resend (or Supabase built-in SMTP for simple invite emails)</td></tr>
+    <tr><td>Use cases</td><td>User invite emails, upload success notifications, export-ready download links</td></tr>
+    <tr><td>Templates</td><td>React Email templates — compiled at build time, responsive HTML</td></tr>
+    <tr><td>Cost</td><td>Resend free tier: 3,000 emails/month · Pro: $20/month for 50,000 emails</td></tr>
+  </tbody>
+</table></div>
+
+<h2 class="sub">6.7 &nbsp;Frontend Libraries</h2>
+<div class="tbl-wrap"><table>
+  <thead><tr><th>Library</th><th>Purpose</th></tr></thead>
+  <tbody>
+    <tr><td>Next.js 14 (App Router)</td><td>Full-stack framework — SSR, ISR, API routes, middleware, streaming</td></tr>
+    <tr><td>TypeScript 5</td><td>End-to-end type safety across frontend, API layer, and database types</td></tr>
+    <tr><td>TailwindCSS 3</td><td>Utility-first styling — matches existing dashboard 9-theme color system</td></tr>
+    <tr><td>Zustand 4</td><td>Lightweight global state (filters, auth, UI) — zero boilerplate</td></tr>
+    <tr><td>TanStack Query 5</td><td>Server state, request deduplication, background refresh, optimistic updates</td></tr>
+    <tr><td>React Hook Form + Zod</td><td>Type-safe form validation for login, add-user, manual P&L edit forms</td></tr>
+    <tr><td>Radix UI / shadcn/ui</td><td>Accessible headless components — dialogs, dropdowns, tabs, tooltips</td></tr>
+    <tr><td>next-themes</td><td>Theme switching with system preference detection and no flash on load</td></tr>
+    <tr><td>date-fns</td><td>Period label formatting and date arithmetic</td></tr>
+    <tr><td>papaparse</td><td>CSV parsing in the browser upload path (fallback for non-XLSX files)</td></tr>
+  </tbody>
+</table></div>
+
+<div class="page-break"></div>
+
+<!-- ═══════════════ SECTION 7 ═══════════════ -->
+<h1 class="sec" id="s7">7. Deployment & DevOps</h1>
+
+<h2 class="sub">7.1 &nbsp;Environment Variables</h2>
+<div class="tbl-wrap"><table>
+  <thead><tr><th>Variable</th><th>Required</th><th>Description</th></tr></thead>
+  <tbody>
+    <tr><td class="mono">NEXT_PUBLIC_SUPABASE_URL</td><td class="center green">✓</td><td>Supabase project URL</td></tr>
+    <tr><td class="mono">NEXT_PUBLIC_SUPABASE_ANON_KEY</td><td class="center green">✓</td><td>Public anon key for client-side Supabase</td></tr>
+    <tr><td class="mono">SUPABASE_SERVICE_ROLE_KEY</td><td class="center green">✓</td><td>Server-only key for admin operations (never exposed)</td></tr>
+    <tr><td class="mono">ANTHROPIC_API_KEY</td><td class="center green">✓</td><td>Claude API key — server-only Route Handler only</td></tr>
+    <tr><td class="mono">RESEND_API_KEY</td><td class="center">Optional</td><td>Email service for invite flows</td></tr>
+    <tr><td class="mono">FX_API_URL</td><td class="center">Optional</td><td>Override for FX rate provider endpoint</td></tr>
+    <tr><td class="mono">NEXT_PUBLIC_APP_URL</td><td class="center green">✓</td><td>Full app URL for email links and CORS policy</td></tr>
+  </tbody>
+</table></div>
+
+<h2 class="sub">7.2 &nbsp;CI/CD Pipeline</h2>
+<ul class="list">
+  <li><strong>GitHub Actions:</strong> lint → TypeScript type-check → unit tests → build on every PR</li>
+  <li><strong>Vercel Preview Deployments:</strong> automatic preview URL per PR branch for stakeholder review</li>
+  <li><strong>Supabase Migrations:</strong> managed in <code>supabase/migrations/</code>, applied via <code>supabase db push</code> in CI</li>
+  <li><strong>Main branch:</strong> automatic production deploy with zero-downtime via Vercel edge network</li>
+</ul>
+
+<h2 class="sub">7.3 &nbsp;Performance Targets</h2>
+<div class="tbl-wrap"><table>
+  <thead><tr><th>Metric</th><th>Target</th></tr></thead>
+  <tbody>
+    <tr><td>Initial page load (LCP)</td><td>&lt; 2.5 seconds</td></tr>
+    <tr><td>P&L data fetch (filtered query)</td><td>&lt; 800ms (Supabase indexed query with RLS)</td></tr>
+    <tr><td>XLS upload + parse (10 MB file)</td><td>&lt; 10 seconds</td></tr>
+    <tr><td>Export PDF generation</td><td>&lt; 5 seconds</td></tr>
+    <tr><td>AI chat response (Claude Sonnet)</td><td>&lt; 8 seconds end-to-end</td></tr>
+    <tr><td>Live FX rate refresh</td><td>&lt; 2 seconds</td></tr>
+  </tbody>
+</table></div>
+
+<div class="page-break"></div>
+
+<!-- ═══════════════ SECTION 8 ═══════════════ -->
+<h1 class="sec" id="s8">8. Migration Plan</h1>
+<p class="body">Recommended phased rollout from the current single-file HTML artifact to a production full-stack application.</p>
+<div class="tbl-wrap"><table>
+  <thead><tr><th>Phase</th><th>Deliverable</th><th>Duration</th></tr></thead>
+  <tbody class="phase-rows">
+    <tr class="phase-row"><td>Phase 0: Setup</td><td>Supabase project, Next.js 14 scaffold, environment config, GitHub repo, CI/CD pipeline</td><td>1 week</td></tr>
+    <tr class="phase-row"><td>Phase 1: Database</td><td>Run all 12 table migrations, seed divisions / periods / fx_rates / benchmark_peers</td><td>3 days</td></tr>
+    <tr class="phase-row"><td>Phase 2: Auth</td><td>Supabase Auth integration, Next.js middleware guards, RBAC, invite flow, login page</td><td>1 week</td></tr>
+    <tr class="phase-row"><td>Phase 3: Data Layer</td><td>Upload XLSX handler, pnl_data CRUD API, TanStack Query hooks, RLS policy testing</td><td>2 weeks</td></tr>
+    <tr class="phase-row"><td>Phase 4: Dashboard UI</td><td>Port all 10 tabs to React components consuming real API data with live filters</td><td>3 weeks</td></tr>
+    <tr class="phase-row"><td>Phase 5: Charts</td><td>Chart.js integration, BCG-style dual panel, CAGR overlays, filter reactivity</td><td>1 week</td></tr>
+    <tr class="phase-row"><td>Phase 6: Exports</td><td>Excel/PDF/PPT export with Chart.js canvas image embedding (server-side rendering)</td><td>1 week</td></tr>
+    <tr class="phase-row"><td>Phase 7: AI Assistant</td><td>Anthropic proxy route, dynamic context injection, chat persistence in Supabase</td><td>1 week</td></tr>
+    <tr class="phase-row"><td>Phase 8: UAT & Launch</td><td>User acceptance testing with CFO + Procurement Lead, performance tuning, go-live</td><td>1 week</td></tr>
+  </tbody>
+</table></div>
+<div class="callout green"><div class="callout-badge">TIMELINE</div><div class="callout-body"><strong>~12–14 weeks</strong> for a single full-stack developer &nbsp;·&nbsp; <strong>8–10 weeks</strong> with a 2-person team (frontend + backend split). Budget approximately <strong>USD 45/month</strong> for Supabase Pro + Vercel Pro in production.</div></div>
+
+<!-- FOOTER -->
+<div class="doc-footer">
+  <span>Procurement P&L Dashboard — Technical Specification v1.0</span>
+  <span>Generated 24 August 2026 · Confidential</span>
+</div>
+
+</div><!-- /outer -->
+</body>
+</html>
