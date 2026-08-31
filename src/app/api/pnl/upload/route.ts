@@ -2,8 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { requireRole } from "@/lib/rbac";
 import { db } from "@/lib/db";
 import { divisions, periods, pnlData, costComponents, dataUploads, userSessions } from "@/lib/db/schema";
-import { eq } from "drizzle-orm";
-import { parseWorkbook } from "@/lib/xlsx-parser";
+import { inArray, sql } from "drizzle-orm";
+import { parseWorkbook, type ParsedPnlRow } from "@/lib/xlsx-parser";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -36,82 +36,67 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: `Validation failed: ${parsed.errors.join(" | ")}`, code: 422 }, { status: 422 });
   }
 
-  const divisionCache = new Map<string, string>();
-  const periodCache = new Map<string, string>();
+  // Every row write below is batched into one statement per table (rather than looping
+  // per row) — with the Neon HTTP driver each query is its own network round trip, and a
+  // few hundred sequential round trips for a multi-hundred-row file pushed this past 55s,
+  // dangerously close to the 60s serverless function limit.
+  const divisionMap = await resolveDivisions(parsed.rows);
+  const periodMap = await resolvePeriods(parsed.rows);
 
-  for (const row of parsed.rows) {
-    let divisionId = divisionCache.get(row.division);
-    if (!divisionId) {
-      const existing = await db.query.divisions.findFirst({ where: eq(divisions.code, row.division) });
-      divisionId = existing?.id ?? (await db.insert(divisions).values({ code: row.division, name: row.division }).returning())[0].id;
-      divisionCache.set(row.division, divisionId);
-    }
+  const pnlValues = parsed.rows.map((row) => ({
+    divisionId: divisionMap.get(row.division)!,
+    periodId: periodMap.get(row.periodLabel)!,
+    recordType: row.recordType,
+    costSaving: String(row.costSaving),
+    costAvoidance: String(row.costAvoidance),
+    totalValueCreation: String(row.totalValueCreation),
+    initialSum: String(row.initialSum),
+    sumAfterSaving: String(row.sumAfterSaving),
+    totalCostIncurred: String(row.totalCostIncurred),
+    revenue: String(row.revenue),
+    grossProfit: String(row.grossProfit),
+    uploadedBy: session.user.id,
+    sourceFile: file.name,
+  }));
 
-    let periodId = periodCache.get(row.periodLabel);
-    if (!periodId) {
-      const existing = await db.query.periods.findFirst({ where: eq(periods.label, row.periodLabel) });
-      periodId =
-        existing?.id ??
-        (
-          await db
-            .insert(periods)
-            .values({
-              label: row.periodLabel,
-              year: row.year,
-              quarter: row.quarter,
-              isFy: row.isFy,
-              sortOrder: row.year * 10 + (row.quarter ?? 5),
-            })
-            .returning()
-        )[0].id;
-      periodCache.set(row.periodLabel, periodId);
-    }
+  const upserted = await db
+    .insert(pnlData)
+    .values(pnlValues)
+    .onConflictDoUpdate({
+      target: [pnlData.divisionId, pnlData.periodId, pnlData.recordType],
+      set: {
+        costSaving: sql`excluded.cost_saving`,
+        costAvoidance: sql`excluded.cost_avoidance`,
+        totalValueCreation: sql`excluded.total_value_creation`,
+        initialSum: sql`excluded.initial_sum`,
+        sumAfterSaving: sql`excluded.sum_after_saving`,
+        totalCostIncurred: sql`excluded.total_cost_incurred`,
+        revenue: sql`excluded.revenue`,
+        grossProfit: sql`excluded.gross_profit`,
+        uploadedBy: sql`excluded.uploaded_by`,
+        sourceFile: sql`excluded.source_file`,
+        updatedAt: new Date(),
+      },
+    })
+    .returning({ id: pnlData.id, divisionId: pnlData.divisionId, periodId: pnlData.periodId, recordType: pnlData.recordType });
 
-    const [upserted] = await db
-      .insert(pnlData)
-      .values({
-        divisionId,
-        periodId,
-        recordType: row.recordType,
-        costSaving: String(row.costSaving),
-        costAvoidance: String(row.costAvoidance),
-        totalValueCreation: String(row.totalValueCreation),
-        initialSum: String(row.initialSum),
-        sumAfterSaving: String(row.sumAfterSaving),
-        totalCostIncurred: String(row.totalCostIncurred),
-        revenue: String(row.revenue),
-        grossProfit: String(row.grossProfit),
-        uploadedBy: session.user.id,
-        sourceFile: file.name,
-      })
-      .onConflictDoUpdate({
-        target: [pnlData.divisionId, pnlData.periodId, pnlData.recordType],
-        set: {
-          costSaving: String(row.costSaving),
-          costAvoidance: String(row.costAvoidance),
-          totalValueCreation: String(row.totalValueCreation),
-          initialSum: String(row.initialSum),
-          sumAfterSaving: String(row.sumAfterSaving),
-          totalCostIncurred: String(row.totalCostIncurred),
-          revenue: String(row.revenue),
-          grossProfit: String(row.grossProfit),
-          uploadedBy: session.user.id,
-          sourceFile: file.name,
-          updatedAt: new Date(),
-        },
-      })
-      .returning({ id: pnlData.id });
+  const pnlIdByKey = new Map(upserted.map((r) => [`${r.divisionId}|${r.periodId}|${r.recordType}`, r.id]));
+  const idsInOrder = parsed.rows.map((row) => pnlIdByKey.get(`${divisionMap.get(row.division)}|${periodMap.get(row.periodLabel)}|${row.recordType}`)!);
 
-    await db.delete(costComponents).where(eq(costComponents.pnlDataId, upserted.id));
-    const componentRows = Object.entries(row.costComponents).map(([key, amount], i) => ({
-      pnlDataId: upserted.id,
-      componentKey: key,
-      componentLabel: key,
-      amount: String(amount ?? 0),
-      sortOrder: i,
-    }));
-    if (componentRows.length > 0) {
-      await db.insert(costComponents).values(componentRows);
+  if (idsInOrder.length > 0) {
+    await db.delete(costComponents).where(inArray(costComponents.pnlDataId, idsInOrder));
+
+    const componentValues = parsed.rows.flatMap((row, i) =>
+      Object.entries(row.costComponents).map(([key, amount], sortOrder) => ({
+        pnlDataId: idsInOrder[i],
+        componentKey: key,
+        componentLabel: key,
+        amount: String(amount ?? 0),
+        sortOrder,
+      }))
+    );
+    if (componentValues.length > 0) {
+      await db.insert(costComponents).values(componentValues);
     }
   }
 
@@ -123,7 +108,7 @@ export async function POST(req: NextRequest) {
       rowsProcessed: parsed.rows.length,
       divisionsUpdated: parsed.divisionsUpdated,
       periodsUpdated: parsed.periodsUpdated,
-      status: parsed.errors.length > 0 ? "success" : "success",
+      status: "success",
       errorMessage: parsed.errors.length > 0 ? parsed.errors.join(" | ") : null,
     })
     .returning();
@@ -141,4 +126,56 @@ export async function POST(req: NextRequest) {
     periods: parsed.periodsUpdated,
     warnings: parsed.errors,
   });
+}
+
+async function resolveDivisions(rows: ParsedPnlRow[]): Promise<Map<string, string>> {
+  const codes = [...new Set(rows.map((r) => r.division))];
+  const existing = await db.query.divisions.findMany({ where: inArray(divisions.code, codes) });
+  const map = new Map(existing.map((d) => [d.code, d.id]));
+
+  const missing = codes.filter((c) => !map.has(c));
+  if (missing.length > 0) {
+    const created = await db
+      .insert(divisions)
+      .values(missing.map((code) => ({ code, name: code })))
+      .onConflictDoNothing({ target: divisions.code })
+      .returning();
+    created.forEach((d) => map.set(d.code, d.id));
+
+    const stillMissing = missing.filter((c) => !map.has(c));
+    if (stillMissing.length > 0) {
+      const refetched = await db.query.divisions.findMany({ where: inArray(divisions.code, stillMissing) });
+      refetched.forEach((d) => map.set(d.code, d.id));
+    }
+  }
+  return map;
+}
+
+async function resolvePeriods(rows: ParsedPnlRow[]): Promise<Map<string, string>> {
+  const labels = [...new Set(rows.map((r) => r.periodLabel))];
+  const existing = await db.query.periods.findMany({ where: inArray(periods.label, labels) });
+  const map = new Map(existing.map((p) => [p.label, p.id]));
+
+  const byLabel = new Map(rows.map((r) => [r.periodLabel, r]));
+  const missing = labels.filter((l) => !map.has(l));
+  if (missing.length > 0) {
+    const created = await db
+      .insert(periods)
+      .values(
+        missing.map((label) => {
+          const r = byLabel.get(label)!;
+          return { label, year: r.year, quarter: r.quarter, isFy: r.isFy, sortOrder: r.year * 10 + (r.quarter ?? 5) };
+        })
+      )
+      .onConflictDoNothing({ target: periods.label })
+      .returning();
+    created.forEach((p) => map.set(p.label, p.id));
+
+    const stillMissing = missing.filter((l) => !map.has(l));
+    if (stillMissing.length > 0) {
+      const refetched = await db.query.periods.findMany({ where: inArray(periods.label, stillMissing) });
+      refetched.forEach((p) => map.set(p.label, p.id));
+    }
+  }
+  return map;
 }
