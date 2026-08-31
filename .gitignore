@@ -25,5 +25,8 @@ next-env.d.ts
 # vercel
 .vercel
 
+# local dev-server launch config (Claude Code tooling, not app config)
+.claude/
+
 # drizzle
 /drizzle/meta
