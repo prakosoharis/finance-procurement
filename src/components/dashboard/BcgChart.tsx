@@ -4,7 +4,9 @@ import {
   Chart as ChartJS,
   CategoryScale,
   LinearScale,
+  BarController,
   BarElement,
+  LineController,
   LineElement,
   PointElement,
   Title,
@@ -15,7 +17,13 @@ import { Chart } from "react-chartjs-2";
 import type { PnlRow } from "@/types";
 import type { ChartMetric } from "@/store/useFilterStore";
 
-ChartJS.register(CategoryScale, LinearScale, BarElement, LineElement, PointElement, Title, Tooltip, Legend);
+// The generic mixed-type <Chart> component (we render "bar" + "line" datasets together)
+// needs each type's *controller* registered, not just its element — omitting
+// BarController/LineController throws "'bar' is not a registered controller" on a
+// fresh page load. This didn't surface in local dev because Fast Refresh can leave a
+// prior registration sitting in Chart.js's global registry across edits; a real
+// production build starts from a clean registry, so it failed there first.
+ChartJS.register(CategoryScale, LinearScale, BarController, BarElement, LineController, LineElement, PointElement, Title, Tooltip, Legend);
 
 const METRIC_KEY: Record<ChartMetric, keyof PnlRow> = {
   sum: "initialSum",
