@@ -1,11 +1,10 @@
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { NextResponse } from "next/server";
+import { allowedDivisionsFor, canUpload, canManageUsers, canExport, canEditFxRates, DEFAULT_VIEWER_SCOPE, type Role } from "@/lib/access";
 
-export type Role = "admin" | "manager" | "viewer";
-
-/** Divisions a viewer with no explicit division_access can see. */
-export const DEFAULT_VIEWER_SCOPE = ["Combine"];
+export type { Role };
+export { allowedDivisionsFor, canUpload, canManageUsers, canExport, canEditFxRates, DEFAULT_VIEWER_SCOPE };
 
 export async function requireSession() {
   const session = await getServerSession(authOptions);
@@ -25,26 +24,4 @@ export async function requireRole(...roles: Role[]) {
     };
   }
   return { session, error: null };
-}
-
-/** Divisions a given session is allowed to read. `null` means "all divisions". */
-export function allowedDivisionsFor(session: { user: { role: Role; divisionAccess: string[] } }): string[] | null {
-  if (session.user.role === "admin" || session.user.role === "manager") return null;
-  return session.user.divisionAccess.length > 0 ? session.user.divisionAccess : DEFAULT_VIEWER_SCOPE;
-}
-
-export function canUpload(role: Role) {
-  return role === "admin";
-}
-
-export function canManageUsers(role: Role) {
-  return role === "admin";
-}
-
-export function canExport(role: Role) {
-  return role === "admin" || role === "manager";
-}
-
-export function canEditFxRates(role: Role) {
-  return role === "admin";
 }

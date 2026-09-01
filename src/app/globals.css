@@ -4,8 +4,207 @@
 
 @import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap");
 
+/* ══════════════════════════════════════════════════════════════════
+   THEME TOKENS
+   Every theme redefines the same set of "R G B" triplets. Tailwind
+   colors (tailwind.config.ts) read these via rgb(var(--x) / <alpha>),
+   so every color utility class (background, text, border) — opacity
+   modifiers included — repaints automatically the instant [data-theme]
+   changes on the html element.
+   No component needs per-theme conditional classNames for color.
+   ══════════════════════════════════════════════════════════════════ */
+:root {
+  --bg: 11 15 21;
+  --bg2: 17 23 34;
+  --bg3: 22 30 45;
+  --surface: 28 38 57;
+  --border: 37 51 72;
+  --teal: 0 212 245;
+  --gold: 245 166 35;
+  --green: 61 220 132;
+  --red: 255 77 109;
+  --purple: 167 139 250;
+  --text: 221 230 240;
+  --muted: 94 122 152;
+  --light: 139 168 196;
+  --fy-col: 30 46 69;
+  --blue-hdr: 27 58 107;
+  --org-hdr: 184 74 12;
+  --gap-bg: 23 36 18;
+  --gap-bdr: 45 107 30;
+}
+
+[data-theme="minimalist"] {
+  --bg: 250 251 252;
+  --bg2: 255 255 255;
+  --bg3: 243 245 248;
+  --surface: 238 241 245;
+  --border: 225 230 236;
+  --teal: 8 145 178;
+  --gold: 217 119 6;
+  --green: 5 150 105;
+  --red: 220 38 38;
+  --purple: 124 58 237;
+  --text: 30 41 59;
+  --muted: 100 116 139;
+  --light: 71 85 105;
+  --fy-col: 234 242 251;
+  --blue-hdr: 37 99 235;
+  --org-hdr: 234 88 12;
+  --gap-bg: 240 249 240;
+  --gap-bdr: 134 196 126;
+}
+
+[data-theme="glass"] {
+  --bg: 15 23 42;
+  --bg2: 30 41 59;
+  --bg3: 51 65 85;
+  --surface: 71 85 105;
+  --border: 148 163 184;
+  --teal: 103 232 249;
+  --gold: 251 191 36;
+  --green: 134 239 172;
+  --red: 252 165 165;
+  --purple: 196 181 253;
+  --text: 241 245 249;
+  --muted: 203 213 225;
+  --light: 226 232 240;
+  --fy-col: 59 130 246;
+  --blue-hdr: 59 130 246;
+  --org-hdr: 249 115 22;
+  --gap-bg: 23 36 18;
+  --gap-bdr: 45 107 30;
+}
+
+[data-theme="skeuo"] {
+  --bg: 224 229 236;
+  --bg2: 224 229 236;
+  --bg3: 209 217 230;
+  --surface: 214 221 230;
+  --border: 190 200 209;
+  --teal: 14 116 144;
+  --gold: 180 83 9;
+  --green: 21 128 61;
+  --red: 185 28 28;
+  --purple: 109 40 217;
+  --text: 30 41 59;
+  --muted: 71 85 105;
+  --light: 51 65 85;
+  --fy-col: 205 213 221;
+  --blue-hdr: 59 130 246;
+  --org-hdr: 234 88 12;
+  --gap-bg: 232 245 233;
+  --gap-bdr: 129 199 132;
+}
+
+[data-theme="neo"] {
+  --bg: 254 243 199;
+  --bg2: 255 255 255;
+  --bg3: 255 247 237;
+  --surface: 254 249 195;
+  --border: 0 0 0;
+  --teal: 6 182 212;
+  --gold: 245 158 11;
+  --green: 22 163 74;
+  --red: 220 38 38;
+  --purple: 168 85 247;
+  --text: 0 0 0;
+  --muted: 82 82 82;
+  --light: 23 23 23;
+  --fy-col: 251 191 36;
+  --blue-hdr: 37 99 235;
+  --org-hdr: 234 88 12;
+  --gap-bg: 190 242 100;
+  --gap-bdr: 0 0 0;
+}
+
+[data-theme="bento"] {
+  --bg: 248 250 252;
+  --bg2: 255 255 255;
+  --bg3: 241 245 249;
+  --surface: 226 232 240;
+  --border: 226 232 240;
+  --teal: 6 182 212;
+  --gold: 245 158 11;
+  --green: 16 185 129;
+  --red: 239 68 68;
+  --purple: 139 92 246;
+  --text: 15 23 42;
+  --muted: 100 116 139;
+  --light: 51 65 85;
+  --fy-col: 239 246 255;
+  --blue-hdr: 59 130 246;
+  --org-hdr: 249 115 22;
+  --gap-bg: 240 253 244;
+  --gap-bdr: 187 247 208;
+}
+
+[data-theme="y2k"] {
+  --bg: 224 231 255;
+  --bg2: 255 255 255;
+  --bg3: 219 234 254;
+  --surface: 199 210 254;
+  --border: 165 180 252;
+  --teal: 124 58 237;
+  --gold: 236 72 153;
+  --green: 16 185 129;
+  --red: 244 63 94;
+  --purple: 139 92 246;
+  --text: 30 27 75;
+  --muted: 99 102 241;
+  --light: 55 48 163;
+  --fy-col: 199 210 254;
+  --blue-hdr: 139 92 246;
+  --org-hdr: 236 72 153;
+  --gap-bg: 187 247 208;
+  --gap-bdr: 16 185 129;
+}
+
+[data-theme="nature"] {
+  --bg: 245 243 238;
+  --bg2: 254 253 249;
+  --bg3: 237 233 224;
+  --surface: 231 226 213;
+  --border: 214 205 184;
+  --teal: 107 142 127;
+  --gold: 184 145 92;
+  --green: 101 141 79;
+  --red: 197 112 78;
+  --purple: 138 124 168;
+  --text: 58 53 40;
+  --muted: 122 113 95;
+  --light: 92 84 68;
+  --fy-col: 226 223 208;
+  --blue-hdr: 74 103 65;
+  --org-hdr: 176 107 58;
+  --gap-bg: 221 229 208;
+  --gap-bdr: 138 157 107;
+}
+
+[data-theme="kinetic"] {
+  --bg: 10 10 10;
+  --bg2: 20 20 20;
+  --bg3: 26 26 26;
+  --surface: 38 38 38;
+  --border: 42 42 42;
+  --teal: 0 255 136;
+  --gold: 255 215 0;
+  --green: 0 255 136;
+  --red: 255 0 102;
+  --purple: 255 0 255;
+  --text: 255 255 255;
+  --muted: 115 115 115;
+  --light: 163 163 163;
+  --fy-col: 31 31 31;
+  --blue-hdr: 0 0 0;
+  --org-hdr: 26 26 26;
+  --gap-bg: 0 26 12;
+  --gap-bdr: 0 255 136;
+}
+
 body {
   @apply bg-bg text-text font-sans;
+  transition: background-color 0.2s ease, color 0.2s ease;
 }
 
 ::-webkit-scrollbar {
@@ -18,4 +217,381 @@ body {
 ::-webkit-scrollbar-thumb {
   background: theme("colors.border");
   border-radius: 4px;
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   STRUCTURAL THEME OVERRIDES
+   Shape, shadow and background flourishes on the components tagged
+   with data-ui="..." — targets shared chrome (header, filter bar, tab
+   nav, KPI strip, generic content cards) so every page inherits a
+   theme's character without needing its own per-theme classNames.
+   ══════════════════════════════════════════════════════════════════ */
+
+/* ---------- Glassmorphism ---------- */
+[data-theme="glass"] body {
+  background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 35%, #312e81 75%, #1e3a8a 100%);
+  background-attachment: fixed;
+  position: relative;
+}
+[data-theme="glass"] body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  background: radial-gradient(at 20% 30%, rgba(168, 85, 247, 0.25), transparent 50%), radial-gradient(at 80% 70%, rgba(34, 211, 238, 0.2), transparent 50%),
+    radial-gradient(at 50% 100%, rgba(244, 114, 182, 0.15), transparent 50%);
+  pointer-events: none;
+  z-index: -1;
+}
+[data-theme="glass"] [data-ui="header"],
+[data-theme="glass"] [data-ui="filter-bar"],
+[data-theme="glass"] [data-ui="tab-nav"],
+[data-theme="glass"] [data-ui="currency-banner"] {
+  background: rgba(15, 23, 42, 0.4) !important;
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border-color: rgba(148, 163, 184, 0.15) !important;
+}
+[data-theme="glass"] [data-ui="kpi-card"],
+[data-theme="glass"] [data-ui="card"] {
+  background: rgba(255, 255, 255, 0.06) !important;
+  backdrop-filter: blur(16px) saturate(150%);
+  -webkit-backdrop-filter: blur(16px) saturate(150%);
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+[data-theme="glass"] [data-ui="card-bar"] {
+  background: rgba(255, 255, 255, 0.04) !important;
+}
+
+/* ---------- Skeuomorphism ---------- */
+[data-theme="skeuo"] body {
+  background: #e0e5ec;
+}
+[data-theme="skeuo"] [data-ui="header"] {
+  background: linear-gradient(145deg, #f0f5fc, #cdd2db) !important;
+  box-shadow: 6px 6px 16px #b8bec8, -6px -6px 16px #ffffff;
+  border: none !important;
+}
+[data-theme="skeuo"] [data-ui="filter-bar"],
+[data-theme="skeuo"] [data-ui="tab-nav"] {
+  background: #e0e5ec !important;
+  box-shadow: inset 3px 3px 6px #b8bec8, inset -3px -3px 6px #ffffff;
+  border: none !important;
+}
+[data-theme="skeuo"] [data-ui="kpi-card"],
+[data-theme="skeuo"] [data-ui="card"] {
+  background: #e0e5ec !important;
+  box-shadow: 8px 8px 20px #b8bec8, -8px -8px 20px #ffffff !important;
+  border: none !important;
+  border-radius: 18px !important;
+}
+[data-theme="skeuo"] [data-ui="card-bar"] {
+  background: linear-gradient(145deg, #e8edf5, #d4d9e2) !important;
+  border-radius: 18px 18px 0 0;
+}
+[data-theme="skeuo"] [data-ui="pill"],
+[data-theme="skeuo"] [data-ui="division-select"] {
+  background: #e0e5ec !important;
+  box-shadow: 4px 4px 8px #b8bec8, -4px -4px 8px #ffffff !important;
+  border: none !important;
+  border-radius: 10px !important;
+}
+[data-theme="skeuo"] [data-ui="pill"][data-active="true"] {
+  box-shadow: inset 3px 3px 6px rgba(0, 0, 0, 0.15), inset -2px -2px 5px rgba(255, 255, 255, 0.5) !important;
+}
+
+/* ---------- Neo-Brutalism ---------- */
+[data-theme="neo"] * {
+  border-radius: 0 !important;
+}
+[data-theme="neo"] body {
+  background: #fef3c7;
+}
+[data-theme="neo"] [data-ui="header"] {
+  background: #fbbf24 !important;
+  border-bottom: 4px solid #000 !important;
+  box-shadow: 0 6px 0 #000;
+}
+[data-theme="neo"] [data-ui="header-title"] {
+  color: #000 !important;
+  -webkit-text-fill-color: #000 !important;
+  background: none !important;
+  font-weight: 900;
+  letter-spacing: -1px;
+}
+[data-theme="neo"] [data-ui="header-sub"] {
+  color: #000 !important;
+  font-weight: 600;
+}
+[data-theme="neo"] [data-ui="filter-bar"],
+[data-theme="neo"] [data-ui="tab-nav"] {
+  background: #fff !important;
+  border-bottom: 3px solid #000 !important;
+}
+[data-theme="neo"] [data-ui="kpi-card"],
+[data-theme="neo"] [data-ui="card"] {
+  background: #fff !important;
+  border: 3px solid #000 !important;
+  box-shadow: 6px 6px 0 #000 !important;
+}
+[data-theme="neo"] [data-ui="kpi-value"] {
+  font-weight: 900;
+  letter-spacing: -1px;
+}
+[data-theme="neo"] [data-ui="card-bar"] {
+  background: #fbbf24 !important;
+  border-bottom: 3px solid #000 !important;
+  color: #000 !important;
+  font-weight: 900;
+  letter-spacing: 1px;
+}
+[data-theme="neo"] [data-ui="pill"],
+[data-theme="neo"] [data-ui="division-select"] {
+  background: #fff !important;
+  border: 2px solid #000 !important;
+  color: #000 !important;
+  font-weight: 700 !important;
+  box-shadow: 3px 3px 0 #000 !important;
+}
+[data-theme="neo"] [data-ui="pill"][data-active="true"] {
+  background: #fbbf24 !important;
+}
+[data-theme="neo"] [data-ui="tab"][data-active="true"] {
+  font-weight: 900 !important;
+  border-bottom-width: 3px !important;
+}
+
+/* ---------- Bento Box ---------- */
+[data-theme="bento"] body {
+  background: #f8fafc;
+}
+[data-theme="bento"] [data-ui="header"] {
+  background: #fff !important;
+  border-bottom: none !important;
+  box-shadow: 0 1px 0 #f1f5f9;
+}
+[data-theme="bento"] [data-ui="header-title"] {
+  background: linear-gradient(135deg, #0f172a 0%, #06b6d4 50%, #8b5cf6 100%) !important;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+[data-theme="bento"] [data-ui="filter-bar"],
+[data-theme="bento"] [data-ui="tab-nav"] {
+  background: #fff !important;
+  border-bottom: 1px solid #f1f5f9 !important;
+}
+[data-theme="bento"] [data-ui="kpi-card"] {
+  border-radius: 22px !important;
+  border: none !important;
+  color: #fff;
+}
+[data-theme="bento"] [data-ui="kpi-card"] [data-ui="kpi-label"],
+[data-theme="bento"] [data-ui="kpi-card"] [data-ui="kpi-value"] {
+  color: #fff !important;
+}
+[data-theme="bento"] [data-ui="kpi-accent"] {
+  display: none;
+}
+[data-theme="bento"] [data-ui="kpi-card"][data-kpi="c1"] {
+  background: linear-gradient(135deg, #06b6d4, #0ea5e9) !important;
+}
+[data-theme="bento"] [data-ui="kpi-card"][data-kpi="c2"] {
+  background: linear-gradient(135deg, #f59e0b, #f97316) !important;
+}
+[data-theme="bento"] [data-ui="kpi-card"][data-kpi="c3"] {
+  background: linear-gradient(135deg, #10b981, #059669) !important;
+}
+[data-theme="bento"] [data-ui="kpi-card"][data-kpi="c4"] {
+  background: linear-gradient(135deg, #8b5cf6, #7c3aed) !important;
+}
+[data-theme="bento"] [data-ui="kpi-card"][data-kpi="c5"] {
+  background: linear-gradient(135deg, #3b82f6, #1d4ed8) !important;
+}
+[data-theme="bento"] [data-ui="kpi-card"][data-kpi="c6"] {
+  background: linear-gradient(135deg, #f59e0b, #d97706) !important;
+}
+[data-theme="bento"] [data-ui="card"] {
+  background: #fff !important;
+  border: none !important;
+  border-radius: 22px !important;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06) !important;
+}
+[data-theme="bento"] [data-ui="card-bar"] {
+  background: #f8fafc !important;
+  border-radius: 22px 22px 0 0;
+}
+[data-theme="bento"] [data-ui="pill"][data-active="true"] {
+  background: #0f172a !important;
+  color: #fff !important;
+}
+
+/* ---------- Y2K ---------- */
+[data-theme="y2k"] body {
+  background: linear-gradient(135deg, #fce7f3 0%, #e0e7ff 25%, #cffafe 50%, #fef3c7 75%, #fce7f3 100%);
+  background-attachment: fixed;
+}
+[data-theme="y2k"] [data-ui="header"] {
+  background: linear-gradient(90deg, #c084fc, #60a5fa, #34d399) !important;
+  box-shadow: 0 0 20px rgba(167, 139, 250, 0.5);
+  border-bottom: 2px solid #fff !important;
+}
+[data-theme="y2k"] [data-ui="header-title"] {
+  background: linear-gradient(90deg, #fff, #fef3c7, #fff) !important;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  text-shadow: 0 0 8px rgba(255, 255, 255, 0.5);
+  font-weight: 900;
+}
+[data-theme="y2k"] [data-ui="header-sub"] {
+  color: #fef9c3 !important;
+  font-weight: 600;
+}
+[data-theme="y2k"] [data-ui="filter-bar"],
+[data-theme="y2k"] [data-ui="tab-nav"] {
+  background: rgba(255, 255, 255, 0.6) !important;
+  backdrop-filter: blur(10px);
+  border-bottom: 2px solid #c084fc !important;
+}
+[data-theme="y2k"] [data-ui="kpi-card"],
+[data-theme="y2k"] [data-ui="card"] {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(224, 231, 255, 0.95) 100%) !important;
+  border: 2px solid transparent !important;
+  border-radius: 16px !important;
+  box-shadow: 0 4px 20px rgba(124, 58, 237, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.8) !important;
+}
+[data-theme="y2k"] [data-ui="kpi-value"] {
+  background: linear-gradient(135deg, #8b5cf6, #ec4899);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  font-weight: 800;
+}
+[data-theme="y2k"] [data-ui="card-bar"] {
+  background: linear-gradient(90deg, #c084fc, #f0abfc) !important;
+  color: #fff !important;
+  border-bottom: none !important;
+}
+[data-theme="y2k"] [data-ui="pill"],
+[data-theme="y2k"] [data-ui="division-select"] {
+  background: rgba(255, 255, 255, 0.7) !important;
+  border: 1px solid #c084fc !important;
+  color: #6d28d9 !important;
+  backdrop-filter: blur(8px);
+}
+[data-theme="y2k"] [data-ui="pill"][data-active="true"] {
+  background: linear-gradient(135deg, #ec4899, #8b5cf6) !important;
+  color: #fff !important;
+  border-color: #fff !important;
+}
+
+/* ---------- Nature Distilled ---------- */
+[data-theme="nature"] body {
+  background: #f5f3ee;
+}
+[data-theme="nature"] [data-ui="header"] {
+  background: #fefdf9 !important;
+  border-bottom: 1px solid #d6cdb8 !important;
+}
+[data-theme="nature"] [data-ui="header-title"] {
+  color: #3a3528 !important;
+  -webkit-text-fill-color: #3a3528 !important;
+  background: none !important;
+  font-weight: 600;
+  letter-spacing: -0.5px;
+}
+[data-theme="nature"] [data-ui="filter-bar"],
+[data-theme="nature"] [data-ui="tab-nav"] {
+  background: #fefdf9 !important;
+  border-bottom: 1px solid #d6cdb8 !important;
+}
+[data-theme="nature"] [data-ui="kpi-card"],
+[data-theme="nature"] [data-ui="card"] {
+  background: #fefdf9 !important;
+  border: 1px solid #d6cdb8 !important;
+  border-radius: 6px !important;
+  box-shadow: 0 1px 2px rgba(58, 53, 40, 0.04) !important;
+}
+[data-theme="nature"] [data-ui="kpi-value"] {
+  font-weight: 500;
+}
+[data-theme="nature"] [data-ui="card-bar"] {
+  background: #ede9e0 !important;
+  border-bottom: 1px solid #d6cdb8 !important;
+}
+[data-theme="nature"] [data-ui="pill"][data-active="true"] {
+  background: #4a6741 !important;
+  color: #fefdf9 !important;
+  border-color: #4a6741 !important;
+}
+
+/* ---------- Kinetic Text ---------- */
+[data-theme="kinetic"] body {
+  background: #0a0a0a;
+}
+[data-theme="kinetic"] [data-ui="header"] {
+  background: #000 !important;
+  border-bottom: 1px solid #1f1f1f !important;
+}
+[data-theme="kinetic"] [data-ui="header-title"] {
+  font-weight: 900;
+  letter-spacing: -1.5px;
+  background: linear-gradient(90deg, #fff 0%, #00ff88 50%, #fff 100%) !important;
+  background-size: 200% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: kineticShine 3s linear infinite;
+}
+@keyframes kineticShine {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+[data-theme="kinetic"] [data-ui="kpi-value"] {
+  font-weight: 900;
+  letter-spacing: -1px;
+  background: linear-gradient(135deg, #00ff88, #fff);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+[data-theme="kinetic"] [data-ui="kpi-card"],
+[data-theme="kinetic"] [data-ui="card"] {
+  background: #141414 !important;
+  border: 1px solid #2a2a2a !important;
+  border-radius: 4px !important;
+  transition: all 0.3s;
+}
+[data-theme="kinetic"] [data-ui="kpi-card"]:hover {
+  border-color: #00ff88 !important;
+  transform: translateY(-2px);
+}
+[data-theme="kinetic"] [data-ui="card-bar"] {
+  background: #000 !important;
+  color: #00ff88 !important;
+  letter-spacing: 3px;
+  font-weight: 900;
+}
+[data-theme="kinetic"] [data-ui="filter-bar"],
+[data-theme="kinetic"] [data-ui="tab-nav"] {
+  background: #0a0a0a !important;
+  border-bottom: 1px solid #1f1f1f !important;
+}
+[data-theme="kinetic"] [data-ui="pill"],
+[data-theme="kinetic"] [data-ui="division-select"] {
+  background: #1a1a1a !important;
+  border: 1px solid #2a2a2a !important;
+  color: #a3a3a3 !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.5px;
+}
+[data-theme="kinetic"] [data-ui="pill"][data-active="true"] {
+  background: #00ff88 !important;
+  color: #000 !important;
+  font-weight: 900 !important;
 }

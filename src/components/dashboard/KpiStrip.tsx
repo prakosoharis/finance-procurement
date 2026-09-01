@@ -17,10 +17,18 @@ const ACCENT: Record<string, string> = {
 function Kpi({ id, label, value, sub, valueSize = "text-xl" }: { id: keyof typeof ACCENT; label: string; value: string; sub?: React.ReactNode; valueSize?: string }) {
   const accent = ACCENT[id];
   return (
-    <div className="relative flex-1 min-w-[140px] overflow-hidden rounded-[10px] border border-border bg-bg2 px-3.5 py-3 before:absolute before:inset-x-0 before:top-0 before:h-[2px] before:content-['']">
-      <div className={`absolute inset-x-0 top-0 h-[2px] ${accent.split(" ")[0]}`} />
-      <p className="mb-1.5 text-[10px] font-medium uppercase tracking-[0.1em] text-muted">{label}</p>
-      <p className={`font-mono ${valueSize} font-medium tracking-tight ${accent.split(" ")[1]}`}>{value}</p>
+    <div
+      data-ui="kpi-card"
+      data-kpi={id}
+      className="relative flex-1 min-w-[140px] overflow-hidden rounded-[10px] border border-border bg-bg2 px-3.5 py-3 before:absolute before:inset-x-0 before:top-0 before:h-[2px] before:content-['']"
+    >
+      <div data-ui="kpi-accent" className={`absolute inset-x-0 top-0 h-[2px] ${accent.split(" ")[0]}`} />
+      <p data-ui="kpi-label" className="mb-1.5 text-[10px] font-medium uppercase tracking-[0.1em] text-muted">
+        {label}
+      </p>
+      <p data-ui="kpi-value" className={`font-mono ${valueSize} font-medium tracking-tight ${accent.split(" ")[1]}`}>
+        {value}
+      </p>
       {sub && <div className="mt-1 flex flex-wrap items-center gap-1.5 text-[10px] text-muted">{sub}</div>}
     </div>
   );

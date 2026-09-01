@@ -12,7 +12,7 @@ export async function GET(req: NextRequest) {
   const year = searchParams.get("year") ?? undefined;
   const quarter = searchParams.get("quarter") ?? undefined;
 
-  const allowed = allowedDivisionsFor(session);
+  const allowed = allowedDivisionsFor(session.user);
   const rows = await getPnlRows({ divisions: allowed, divisionParam: division, year, quarter });
 
   const actual = rows.filter((r) => r.recordType === "actual");

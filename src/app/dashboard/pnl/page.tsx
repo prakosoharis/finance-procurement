@@ -17,7 +17,7 @@ export default function PnlRoiPage() {
   if (!rows || rows.length === 0) return <p className="text-sm text-muted">No data for this scope yet.</p>;
 
   return (
-    <div className="overflow-hidden rounded-xl border border-border bg-bg2">
+    <div data-ui="card" className="overflow-hidden rounded-xl border border-border bg-bg2">
       <div className="flex flex-wrap items-center gap-2.5 border-b border-border bg-black/25 px-4 py-2.5 text-[11px] font-bold uppercase tracking-[0.06em] text-light">
         <span>Full P&amp;L — Net Value Creation with ROI</span>
         <span className="ml-auto rounded bg-blueHdr/20 px-1.5 py-0.5 font-mono text-[10px] font-bold text-[#93c5fd]">

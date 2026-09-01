@@ -64,7 +64,7 @@ export default function AiAssistantPage() {
 
   return (
     <div className="grid h-[calc(100vh-260px)] min-h-[460px] grid-cols-1 gap-3.5 lg:grid-cols-[1fr_280px]">
-      <div className="flex flex-col overflow-hidden rounded-xl border border-border bg-bg2">
+      <div data-ui="card" className="flex flex-col overflow-hidden rounded-xl border border-border bg-bg2">
         <div className="flex items-center gap-2.5 border-b border-border bg-teal/[0.04] px-4 py-3">
           <div className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-md bg-gradient-to-br from-teal to-[#0088aa] text-sm">🤖</div>
           <div>
@@ -118,7 +118,7 @@ export default function AiAssistantPage() {
       </div>
 
       <div className="flex flex-col gap-2.5">
-        <div className="rounded-xl border border-border bg-bg2 p-3">
+        <div data-ui="card" className="rounded-xl border border-border bg-bg2 p-3">
           <p className="mb-2 text-[10px] font-bold uppercase tracking-[0.08em] text-muted">Quick Questions</p>
           {QUICK_QUESTIONS.map((q) => (
             <button
@@ -130,7 +130,7 @@ export default function AiAssistantPage() {
             </button>
           ))}
         </div>
-        <div className="rounded-xl border border-border bg-bg2 p-3">
+        <div data-ui="card" className="rounded-xl border border-border bg-bg2 p-3">
           <p className="mb-2 text-[10px] font-bold uppercase tracking-[0.08em] text-muted">Live Snapshot</p>
           <SnapshotRow label="BI Live Rate" value={live ? `Rp${live.rate.toLocaleString("en-US", { maximumFractionDigits: 0 })}` : "…"} />
           <SnapshotRow label="Division" value={division} />

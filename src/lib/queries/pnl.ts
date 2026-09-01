@@ -53,7 +53,27 @@ export async function getPnlRows(filter: PnlFilter): Promise<PnlRow[]> {
   if (filter.year && filter.year !== "All") {
     conditions.push(eq(periods.year, Number(filter.year)));
   }
-  if (filter.quarter && filter.quarter !== "All") {
+  // "YTD Q2"/"YTD Q3" aren't stored periods — they're computed by summing that year's
+  // Q1..Qn actual quarters at query time (see the aggregation pass below). YTD only makes
+  // sense for one specific year — without it, "Q1+Q2 across every year" would silently
+  // blend unrelated years, so fall back to plain "All quarters" instead.
+  const ytdRequested = filter.quarter === "YTDQ2" || filter.quarter === "YTDQ3";
+  const ytdThroughQ = ytdRequested && filter.year && filter.year !== "All" ? (filter.quarter === "YTDQ2" ? 2 : 3) : null;
+  if (ytdThroughQ) {
+    conditions.push(
+      inArray(
+        periods.quarter,
+        Array.from({ length: ytdThroughQ }, (_, i) => i + 1)
+      )
+    );
+    conditions.push(eq(periods.isFy, false));
+  } else if (ytdRequested) {
+    // YTD was requested without a specific year (year="All") — ytdThroughQ is null in
+    // that case, so there's no sensible quarter filter to apply. Fall through as if
+    // quarter were "All" rather than feeding "YTDQ2" into the numeric-quarter parser
+    // below, which previously crashed the query with `Number("YTDQ2".replace("Q","")) →
+    // NaN` sent straight to a smallint column.
+  } else if (filter.quarter && filter.quarter !== "All") {
     if (filter.quarter === "FY") {
       conditions.push(eq(periods.isFy, true));
     } else {
@@ -164,9 +184,50 @@ export async function getPnlRows(filter: PnlFilter): Promise<PnlRow[]> {
         })
       );
     }
-    if (filter.divisionParam === "Combine") return combined;
-    if (!filter.divisionParam || filter.divisionParam === "All") return [...pnlRows, ...combined];
+    if (filter.divisionParam === "Combine") return collapseToYtd(combined, ytdThroughQ);
+    if (!filter.divisionParam || filter.divisionParam === "All") return collapseToYtd([...pnlRows, ...combined], ytdThroughQ);
   }
 
-  return pnlRows;
+  return collapseToYtd(pnlRows, ytdThroughQ);
+}
+
+/**
+ * Collapses a year's Q1..Qn quarterly rows into one "YTD Qn <year>" row per
+ * (division, recordType) by summing — mirrors the Combine aggregation above, just
+ * grouped by division+recordType instead of period+recordType.
+ */
+function collapseToYtd(rows: PnlRow[], ytdThroughQ: number | null): PnlRow[] {
+  if (!ytdThroughQ || rows.length === 0) return rows;
+
+  const groups = new Map<string, PnlRow[]>();
+  for (const r of rows) {
+    const key = `${r.division}__${r.recordType}`;
+    groups.set(key, [...(groups.get(key) ?? []), r]);
+  }
+
+  const ytdRows: PnlRow[] = [];
+  for (const [key, group] of groups) {
+    const [division, recordType] = key.split("__");
+    const sums = combineRows(group);
+    const componentTotals: Partial<Record<CostComponentKey, number>> = {};
+    for (const r of group) {
+      for (const [k, v] of Object.entries(r.costComponents)) {
+        componentTotals[k as CostComponentKey] = (componentTotals[k as CostComponentKey] ?? 0) + (v ?? 0);
+      }
+    }
+    ytdRows.push(
+      toPnlRow({
+        id: `ytd__${key}__${group[0].year}__${ytdThroughQ}`,
+        division,
+        periodLabel: `YTD Q${ytdThroughQ} ${group[0].year}`,
+        year: group[0].year,
+        quarter: ytdThroughQ,
+        isFy: false,
+        recordType: recordType as "actual" | "budget",
+        ...sums,
+        costComponents: componentTotals,
+      })
+    );
+  }
+  return ytdRows;
 }

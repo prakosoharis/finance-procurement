@@ -8,6 +8,7 @@ export function CurrencyBanner() {
 
   return (
     <div
+      data-ui="currency-banner"
       className={`flex items-center gap-2.5 border-b border-border px-6 py-1.5 text-[11px] font-semibold ${
         isUsd ? "bg-blueHdr/5 text-[#93c5fd]" : "bg-orgHdr/5 text-[#fde68a]"
       }`}

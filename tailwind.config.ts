@@ -1,29 +1,38 @@
 import type { Config } from "tailwindcss";
 
+// Every color below reads a CSS custom property (defined per-theme in globals.css as an
+// "R G B" triplet, e.g. --teal: 0 212 245) rather than a literal hex value. That's what
+// lets `setTheme()` re-skin the whole app at runtime just by swapping the `data-theme`
+// attribute on <html> — every `bg-teal`, `text-muted`, `border-border/30` etc. across
+// every component picks up the new palette automatically, opacity modifiers included.
+function themeColor(cssVar: string) {
+  return `rgb(var(--${cssVar}) / <alpha-value>)`;
+}
+
 const config: Config = {
   darkMode: "class",
   content: ["./src/**/*.{ts,tsx}"],
   theme: {
     extend: {
       colors: {
-        bg: "#0b0f15",
-        bg2: "#111722",
-        bg3: "#161e2d",
-        surface: "#1c2639",
-        border: "#253348",
-        teal: "#00d4f5",
-        gold: "#f5a623",
-        green: "#3ddc84",
-        red: "#ff4d6d",
-        purple: "#a78bfa",
-        text: "#dde6f0",
-        muted: "#5e7a98",
-        light: "#8ba8c4",
-        fyCol: "#1e2e45",
-        blueHdr: "#1b3a6b",
-        orgHdr: "#b84a0c",
-        gapBg: "#172412",
-        gapBdr: "#2d6b1e",
+        bg: themeColor("bg"),
+        bg2: themeColor("bg2"),
+        bg3: themeColor("bg3"),
+        surface: themeColor("surface"),
+        border: themeColor("border"),
+        teal: themeColor("teal"),
+        gold: themeColor("gold"),
+        green: themeColor("green"),
+        red: themeColor("red"),
+        purple: themeColor("purple"),
+        text: themeColor("text"),
+        muted: themeColor("muted"),
+        light: themeColor("light"),
+        fyCol: themeColor("fy-col"),
+        blueHdr: themeColor("blue-hdr"),
+        orgHdr: themeColor("org-hdr"),
+        gapBg: themeColor("gap-bg"),
+        gapBdr: themeColor("gap-bdr"),
       },
       fontFamily: {
         sans: ["Inter", "sans-serif"],

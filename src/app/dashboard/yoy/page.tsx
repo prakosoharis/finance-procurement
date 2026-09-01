@@ -54,7 +54,7 @@ export default function YoyPage() {
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-center gap-3 rounded-xl border border-border bg-bg2 px-4 py-3">
+      <div data-ui="card" className="flex flex-wrap items-center gap-3 rounded-xl border border-border bg-bg2 px-4 py-3">
         <span className="text-[11px] font-bold uppercase tracking-[0.08em] text-teal">📈 Period-over-Period Comparison</span>
         <label className="flex items-center gap-1.5 text-[11px] text-muted">
           Base
@@ -89,7 +89,7 @@ export default function YoyPage() {
               const compVal = Number(compareRow[m.key]);
               const d = delta(baseVal, compVal);
               return (
-                <div key={m.key} className="rounded-xl border border-border bg-bg2 p-3.5">
+                <div key={m.key} data-ui="card" className="rounded-xl border border-border bg-bg2 p-3.5">
                   <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.08em] text-muted">{m.label}</p>
                   <div className="flex items-center justify-between text-[11px] text-text">
                     <span>{baseRow.periodLabel}</span>
@@ -112,7 +112,7 @@ export default function YoyPage() {
             })}
           </div>
 
-          <div className="overflow-hidden rounded-xl border border-border bg-bg2">
+          <div data-ui="card" className="overflow-hidden rounded-xl border border-border bg-bg2">
             <div className="border-b border-border bg-black/25 px-4 py-2.5 text-[11px] font-bold uppercase tracking-[0.06em] text-light">Detailed Comparison Table</div>
             <table className="w-full border-collapse text-xs">
               <thead>

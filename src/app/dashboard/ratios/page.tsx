@@ -20,7 +20,7 @@ export default function RatiosPage() {
   }
 
   return (
-    <div className="overflow-hidden rounded-xl border border-border bg-bg2">
+    <div data-ui="card" className="overflow-hidden rounded-xl border border-border bg-bg2">
       <div className="flex items-center gap-2.5 border-b border-border bg-black/25 px-4 py-2.5 text-[11px] font-bold uppercase tracking-[0.06em] text-light">
         <span>Ratio to Revenue &amp; GP</span>
         <span className="sub font-normal normal-case text-muted">[NVC and Cost as a share of company Revenue / Gross Profit]</span>

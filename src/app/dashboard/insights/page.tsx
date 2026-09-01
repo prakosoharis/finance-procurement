@@ -41,7 +41,7 @@ export default function InsightsPage() {
 
   return (
     <div className="grid grid-cols-1 gap-3.5 md:grid-cols-2">
-      <div className="rounded-xl border border-border bg-bg2 p-4">
+      <div data-ui="card" className="rounded-xl border border-border bg-bg2 p-4">
         <h3 className="mb-2.5 flex items-center gap-1.5 border-b border-border pb-1.5 text-xs font-bold text-teal">✓ Performance Highlights</h3>
         {good.length === 0 ? (
           <p className="text-[11px] text-muted">No standout highlights for this scope.</p>
@@ -55,7 +55,7 @@ export default function InsightsPage() {
           </ul>
         )}
       </div>
-      <div className="rounded-xl border border-border bg-bg2 p-4">
+      <div data-ui="card" className="rounded-xl border border-border bg-bg2 p-4">
         <h3 className="mb-2.5 flex items-center gap-1.5 border-b border-border pb-1.5 text-xs font-bold text-teal">⚠ Watch Items</h3>
         {watch.length === 0 ? (
           <p className="text-[11px] text-muted">No areas flagged for attention in this scope.</p>

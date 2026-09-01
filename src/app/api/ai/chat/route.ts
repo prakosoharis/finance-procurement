@@ -50,7 +50,7 @@ export async function POST(req: NextRequest) {
   const { messages, filter_context } = parsed.data;
   const sessionId = parsed.data.session_id ?? crypto.randomUUID();
 
-  const allowed = allowedDivisionsFor(session);
+  const allowed = allowedDivisionsFor(session.user);
   const rows = await getPnlRows({
     divisions: allowed,
     divisionParam: filter_context.division,

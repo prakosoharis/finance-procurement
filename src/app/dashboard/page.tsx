@@ -8,7 +8,7 @@ import { TierBadge } from "@/components/dashboard/TierBadge";
 
 function Section({ title, sub, children }: { title: string; sub: string; children: React.ReactNode }) {
   return (
-    <div className="overflow-hidden rounded-xl border border-border bg-bg2">
+    <div data-ui="card" className="overflow-hidden rounded-xl border border-border bg-bg2">
       <div className="flex flex-wrap items-center gap-2.5 border-b border-border bg-black/25 px-4 py-2.5 text-[11px] font-bold uppercase tracking-[0.06em] text-light">
         <span>{title}</span>
         <span className="font-normal normal-case text-muted">{sub}</span>
