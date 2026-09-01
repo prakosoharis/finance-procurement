@@ -2,7 +2,7 @@
 
 import { Fragment, useState } from "react";
 import { fmtNum } from "@/lib/format";
-import { TierBadge, VsrTierBadge } from "@/components/dashboard/TierBadge";
+import { TierBadge, VsrTierBadge, TierPill, TIER_TEXT, type TierId } from "@/components/dashboard/TierBadge";
 
 export interface PivotPeriod {
   label: string;
@@ -25,6 +25,9 @@ export type PivotRow =
       tone?: "plain" | "result" | "roi";
       /** Color positive green / negative red (used for variance rows). */
       signed?: boolean;
+      /** Grade the value against a benchmark: colours the number, and shows a compact
+       *  pill on full-year columns only (quarterly columns stay narrow). */
+      tierFor?: (v: number) => TierId;
     }
   /** Row of benchmark tier badges. */
   | { kind: "tier"; label: string; values: (number | null)[]; scale: "roi" | "vsr"; sub?: boolean }
@@ -197,10 +200,18 @@ export function PivotTable({
                 <tr key={`${row.label}-${i}`} className={`border-b border-border/40 ${rowClass}`}>
                   <td className={`sticky left-0 z-10 bg-inherit px-3 py-1.5 text-[11px] ${labelClass} ${row.sub ? "pl-6" : ""}`}>{row.label}</td>
                   {periods.map((p, ci) => {
-                    const { text, className } = renderValue(row.values[ci], decimals, suffix, row.signed ?? false);
+                    const value = row.values[ci];
+                    const { text, className } = renderValue(value, decimals, suffix, row.signed ?? false);
+                    const tier = row.tierFor && value !== null ? row.tierFor(value) : null;
                     return (
-                      <Cell key={p.label} isFy={p.isFy} className={`${className} ${tone === "plain" ? "text-text" : ""}`}>
+                      <Cell key={p.label} isFy={p.isFy} className={`${tier ? TIER_TEXT[tier] : className} ${tone === "plain" && !tier ? "text-text" : ""}`}>
                         {text}
+                        {/* Pill only on full-year columns — quarterly columns stay narrow. */}
+                        {tier && p.isFy && (
+                          <span className="mt-1 block">
+                            <TierPill tier={tier} compact />
+                          </span>
+                        )}
                       </Cell>
                     );
                   })}
