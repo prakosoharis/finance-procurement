@@ -35,6 +35,8 @@ export interface PnlSummary {
   actual: PnlSummaryBucket;
   budget: PnlSummaryBucket;
   rowCount: number;
+  periodFrom: string | null;
+  periodTo: string | null;
 }
 
 export interface FxRateRow {
