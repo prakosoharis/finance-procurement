@@ -1,5 +1,6 @@
 import type { PnlRow } from "@/types";
 import type { PeerRow } from "@/hooks/usePeers";
+import { aggregationRows } from "@/lib/format";
 
 export interface SmartMove {
   priority: "now" | "quarter" | "year";
@@ -33,9 +34,15 @@ export function buildSmartMoves(rows: PnlRow[], peers: PeerRow[], division: stri
   const latestFy = fyRows[fyRows.length - 1];
   const latest = latestFy ?? [...actual].sort((a, b) => a.year - b.year || (a.quarter ?? 0) - (b.quarter ?? 0)).pop();
 
-  // 1. Peer-band positioning (fires whenever peer benchmarks exist for this division)
-  if (latest && peers.length > 0 && latest.totalCostIncurred > 0) {
-    const ourMultiple = latest.netValueCreation / latest.totalCostIncurred;
+  // 1. Peer-band positioning (fires whenever peer benchmarks exist for this division).
+  // Graded on the aggregate for the whole filtered scope — the same number the Peer
+  // Parity metric card shows — so the two don't contradict each other on screen.
+  const scopeRows = [...aggregationRows(rows, "actual")].sort((a, b) => a.year - b.year || (a.quarter ?? 5) - (b.quarter ?? 5));
+  const scopeNvc = scopeRows.reduce((a, r) => a + r.netValueCreation, 0);
+  const scopeCost = scopeRows.reduce((a, r) => a + r.totalCostIncurred, 0);
+  const scopeLabel = scopeRows.length > 1 ? `${scopeRows[0].periodLabel} → ${scopeRows.at(-1)!.periodLabel}` : (latest?.periodLabel ?? "current scope");
+  if (peers.length > 0 && scopeCost > 0) {
+    const ourMultiple = scopeNvc / scopeCost;
     const multiples = peers.map((p) => Number(p.roiMultiple)).sort((a, b) => a - b);
     const median = multiples[Math.floor(multiples.length / 2)];
     const top = multiples[multiples.length - 1];
@@ -43,7 +50,7 @@ export function buildSmartMoves(rows: PnlRow[], peers: PeerRow[], division: stri
       moves.push({
         priority: "now",
         title: "Close the gap to peer median ROI",
-        finding: `${division}'s ROI multiple is ${ourMultiple.toFixed(1)}× (${latest.periodLabel}), below the peer median of ${median.toFixed(1)}× across ${peers.length} benchmark(s).`,
+        finding: `${division}'s ROI multiple is ${ourMultiple.toFixed(1)}× (${scopeLabel}), below the peer median of ${median.toFixed(1)}× across ${peers.length} benchmark(s).`,
         move: "Review the largest cost components against peer procurement structures and identify 2-3 categories where spend can convert to documented savings.",
         who: "Procurement Lead",
         when: "Next board cycle",
@@ -53,7 +60,7 @@ export function buildSmartMoves(rows: PnlRow[], peers: PeerRow[], division: stri
       moves.push({
         priority: "year",
         title: "Codify what's driving best-in-class ROI",
-        finding: `${division}'s ROI multiple is ${ourMultiple.toFixed(1)}× (${latest.periodLabel}), at or above the strongest benchmark on file (${top.toFixed(1)}×).`,
+        finding: `${division}'s ROI multiple is ${ourMultiple.toFixed(1)}× (${scopeLabel}), at or above the strongest benchmark on file (${top.toFixed(1)}×).`,
         move: "Document the specific levers (cost saving categories, avoidance practices) driving this result so they can be replicated in other divisions.",
         who: "CFO / Procurement Lead",
         when: "Next quarterly review",
@@ -69,7 +76,7 @@ export function buildSmartMoves(rows: PnlRow[], peers: PeerRow[], division: stri
     moves.push({
       priority: "quarter",
       title: "Start tracking Cost Avoidance separately",
-      finding: `100% of Value Creation in this scope is Cost Saving ($${totalCS.toFixed(2)}Mn) — Cost Avoidance is effectively $0.`,
+      finding: `100% of Value Creation in this scope is Cost Saving ($${totalCS.toFixed(2)} M) — Cost Avoidance is effectively zero.`,
       move: "Stand up a simple Cost Avoidance log (price increases declined, contract renewals held flat, etc.) alongside the existing Cost Saving tracker.",
       who: "Procurement Analyst",
       when: "Within this quarter",
