@@ -28,7 +28,7 @@ const GRID = "#253348";
 const TICK = "#5e7a98";
 
 /** Draws the numeric value above every bar and line point, BCG-exhibit style. */
-const valueLabels: Plugin<"bar"> = {
+export const valueLabels: Plugin<"bar"> = {
   id: "bcgValueLabels",
   afterDatasetsDraw(chart) {
     const { ctx } = chart;
