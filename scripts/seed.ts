@@ -43,13 +43,47 @@ async function main() {
       .onConflictDoNothing({ target: schema.periods.label });
   }
 
+  console.log("Seeding BI JISDOR FX rates...");
+  // Bank Indonesia JISDOR quarterly averages, IDR per USD. FY rows carry the year average.
+  const BI_RATES: Record<string, number> = {
+    "Q1 2022": 14345, "Q2 2022": 14556, "Q3 2022": 14935, "Q4 2022": 15566, "FY 2022": 14871,
+    "Q1 2023": 15242, "Q2 2023": 14866, "Q3 2023": 15214, "Q4 2023": 15629, "FY 2023": 15255,
+    "Q1 2024": 15656, "Q2 2024": 16174, "Q3 2024": 15820, "Q4 2024": 15780, "FY 2024": 15847,
+    "Q1 2025": 16352, "Q2 2025": 16514, "Q3 2025": 16364, "Q4 2025": 16667, "FY 2025": 16516,
+    "Q1 2026": 16352, "Q2 2026": 16514, "Q3 2026": 16364, "Q4 2026": 16667, "FY 2026": 16516,
+  };
+  const allPeriods = await db.query.periods.findMany();
+  const periodIdByLabel = new Map(allPeriods.map((p) => [p.label, p.id]));
+  /** Representative date for a period: quarter-end (or year-end for FY rows). */
+  const rateDateFor = (label: string) => {
+    const [head, yearStr] = label.split(" ");
+    const year = Number(yearStr);
+    if (head === "FY") return new Date(Date.UTC(year, 11, 31));
+    const q = Number(head.replace("Q", ""));
+    return new Date(Date.UTC(year, q * 3 - 1, q === 1 || q === 4 ? 31 : 30));
+  };
+  for (const [label, rate] of Object.entries(BI_RATES)) {
+    const periodId = periodIdByLabel.get(label);
+    if (!periodId) continue;
+    await db
+      .insert(schema.fxRates)
+      .values({ periodId, rateIdrPerUsd: String(rate), rateDate: rateDateFor(label), source: "BI JISDOR" })
+      .onConflictDoUpdate({ target: schema.fxRates.periodId, set: { rateIdrPerUsd: String(rate), rateDate: rateDateFor(label) } });
+  }
+
   console.log("Seeding benchmark peers...");
   const peers = [
     { divisionScope: "All", peerName: "Hackett Group World Class", peerType: "body" as const, roiMultiple: "9.00", sourceLabel: "The Hackett Group — Procurement Benchmark" },
     { divisionScope: "All", peerName: "Hackett Group Excellent", peerType: "body" as const, roiMultiple: "7.00", sourceLabel: "The Hackett Group — Procurement Benchmark" },
     { divisionScope: "SMM", peerName: "Anglo American", peerType: "named" as const, roiMultiple: "6.50", sourceLabel: "Anglo American Annual Procurement Report" },
   ];
+  // benchmark_peers has no unique constraint to conflict on, so skip rows that already
+  // exist — otherwise re-running the seed silently duplicates every peer.
+  const existingPeers = await db.query.benchmarkPeers.findMany();
+  const peerKey = (p: { divisionScope: string; peerName: string }) => `${p.divisionScope}__${p.peerName}`;
+  const seenPeers = new Set(existingPeers.map(peerKey));
   for (const p of peers) {
+    if (seenPeers.has(peerKey(p))) continue;
     await db.insert(schema.benchmarkPeers).values(p);
   }
 
