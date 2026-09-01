@@ -1,24 +1,42 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useFilterStore } from "@/store/useFilterStore";
+import { useFxLive } from "@/hooks/useFxRates";
 
 interface ChatMessage {
   role: "user" | "assistant";
   content: string;
 }
 
+const QUICK_QUESTIONS = [
+  { icon: "📋", label: "P&L Summary", prompt: "Summarize the P&L performance for the current filter selection" },
+  { icon: "📈", label: "ROI vs Benchmarks", prompt: "What is the ROI trend and how does it compare to benchmarks?" },
+  { icon: "💱", label: "NVC in IDR", prompt: "What is Net Value Creation for the current scope in IDR?" },
+  { icon: "🏆", label: "Best Period", prompt: "Which period had the best performance and why?" },
+  { icon: "💸", label: "Spending Gap", prompt: "Explain the gap between Actual vs Target spending" },
+  { icon: "⚠️", label: "Key Risks", prompt: "What are the key risks I should be aware of in this scope?" },
+];
+
+const WELCOME =
+  "👋 Hello! I'm your Procurement Analytics AI with access to your uploaded P&L data: P&L by division (SMM, SUN, OliveLink, Combine) · BI JISDOR quarterly rates for USD↔IDR · ROI, NVC, Value Creation, Cost & Spending analysis · 15-component cost breakdown per period · Revenue & GP benchmarking. Ask me anything about the current filter scope.";
+
 export default function AiAssistantPage() {
-  const { division, year, currency } = useFilterStore();
+  const { division, year, quarter, currency } = useFilterStore();
+  const { data: live } = useFxLive();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
   const [sessionId, setSessionId] = useState<string | undefined>(undefined);
   const [loading, setLoading] = useState(false);
+  const scrollRef = useRef<HTMLDivElement>(null);
 
-  async function sendMessage(e: React.FormEvent) {
-    e.preventDefault();
-    if (!input.trim()) return;
-    const next = [...messages, { role: "user" as const, content: input }];
+  useEffect(() => {
+    scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
+  }, [messages, loading]);
+
+  async function send(text: string) {
+    if (!text.trim() || loading) return;
+    const next = [...messages, { role: "user" as const, content: text }];
     setMessages(next);
     setInput("");
     setLoading(true);
@@ -29,7 +47,7 @@ export default function AiAssistantPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           messages: next,
-          filter_context: { division, year, currency },
+          filter_context: { division, year, quarter, currency },
           session_id: sessionId,
         }),
       });
@@ -45,38 +63,105 @@ export default function AiAssistantPage() {
   }
 
   return (
-    <div className="mx-auto flex max-w-2xl flex-col gap-4">
-      <div className="min-h-[300px] space-y-3 rounded-lg border border-border bg-surface p-4">
-        {messages.length === 0 && (
-          <p className="text-xs text-muted">
-            Ask about the current scope (division: {division}, year: {year}) — e.g. &quot;What&apos;s our ROI this year?&quot;
-          </p>
-        )}
-        {messages.map((m, i) => (
-          <div key={i} className={m.role === "user" ? "text-right" : "text-left"}>
-            <span
-              className={`inline-block max-w-[85%] rounded-lg px-3 py-2 text-xs ${
-                m.role === "user" ? "bg-teal text-bg" : "bg-bg3 text-text"
-              }`}
-            >
-              {m.content}
-            </span>
+    <div className="grid h-[calc(100vh-260px)] min-h-[460px] grid-cols-1 gap-3.5 lg:grid-cols-[1fr_280px]">
+      <div className="flex flex-col overflow-hidden rounded-xl border border-border bg-bg2">
+        <div className="flex items-center gap-2.5 border-b border-border bg-teal/[0.04] px-4 py-3">
+          <div className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-md bg-gradient-to-br from-teal to-[#0088aa] text-sm">🤖</div>
+          <div>
+            <p className="text-xs font-semibold text-text">Procurement AI Assistant</p>
+            <p className="text-[10px] text-muted">Anthropic Claude · Full P&amp;L + BI FX data</p>
           </div>
-        ))}
-        {loading && <p className="text-xs text-muted">Thinking...</p>}
+        </div>
+
+        <div ref={scrollRef} className="flex-1 space-y-2.5 overflow-y-auto p-3">
+          <Bubble role="assistant" text={WELCOME} />
+          {messages.map((m, i) => (
+            <Bubble key={i} role={m.role} text={m.content} />
+          ))}
+          {loading && (
+            <div className="flex items-center gap-1 rounded-lg border border-border bg-bg3 px-3 py-2.5">
+              <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-teal [animation-delay:-0.3s]" />
+              <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-teal [animation-delay:-0.15s]" />
+              <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-teal" />
+            </div>
+          )}
+        </div>
+
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            send(input);
+          }}
+          className="flex items-end gap-1.5 border-t border-border p-2.5"
+        >
+          <textarea
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && !e.shiftKey) {
+                e.preventDefault();
+                send(input);
+              }
+            }}
+            placeholder="Ask about P&L, ROI, IDR impact, benchmarks…"
+            rows={1}
+            className="max-h-[100px] min-h-[36px] flex-1 resize-none rounded-lg border border-border bg-bg3 px-3 py-2 text-xs text-text outline-none focus:border-teal/40"
+          />
+          <button
+            type="submit"
+            disabled={loading || !input.trim()}
+            className="flex h-[34px] w-[34px] flex-shrink-0 items-center justify-center rounded-md bg-teal text-bg transition hover:bg-[#00a8c4] disabled:cursor-not-allowed disabled:bg-surface"
+          >
+            ➤
+          </button>
+        </form>
       </div>
 
-      <form onSubmit={sendMessage} className="flex gap-2">
-        <input
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          placeholder="Ask about P&L, ROI, cost structure..."
-          className="flex-1 rounded-md border border-border bg-bg3 px-3 py-2 text-xs text-text outline-none focus:border-teal"
-        />
-        <button type="submit" disabled={loading} className="rounded-md bg-teal px-4 py-2 text-xs font-semibold text-bg disabled:opacity-50">
-          Send
-        </button>
-      </form>
+      <div className="flex flex-col gap-2.5">
+        <div className="rounded-xl border border-border bg-bg2 p-3">
+          <p className="mb-2 text-[10px] font-bold uppercase tracking-[0.08em] text-muted">Quick Questions</p>
+          {QUICK_QUESTIONS.map((q) => (
+            <button
+              key={q.label}
+              onClick={() => send(q.prompt)}
+              className="mb-1.5 w-full rounded-md border border-border bg-bg3 px-2.5 py-2 text-left text-[11px] leading-snug text-light transition hover:border-teal/30 hover:bg-teal/[0.05] hover:text-teal"
+            >
+              {q.icon} {q.label}
+            </button>
+          ))}
+        </div>
+        <div className="rounded-xl border border-border bg-bg2 p-3">
+          <p className="mb-2 text-[10px] font-bold uppercase tracking-[0.08em] text-muted">Live Snapshot</p>
+          <SnapshotRow label="BI Live Rate" value={live ? `Rp${live.rate.toLocaleString("en-US", { maximumFractionDigits: 0 })}` : "…"} />
+          <SnapshotRow label="Division" value={division} />
+          <SnapshotRow label="Year / Period" value={`${year} / ${quarter}`} />
+          <SnapshotRow label="Currency" value={currency === "USD" ? "USD Mn" : "IDR Bn"} />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function Bubble({ role, text }: { role: "user" | "assistant"; text: string }) {
+  const isUser = role === "user";
+  return (
+    <div className={`flex flex-col gap-0.5 ${isUser ? "items-end" : "items-start"}`}>
+      <div
+        className={`max-w-[85%] whitespace-pre-wrap rounded-lg px-3 py-2 text-xs leading-relaxed ${
+          isUser ? "border border-teal/25 bg-teal/[0.15] text-text" : "border border-border bg-bg3 text-text"
+        }`}
+      >
+        {text}
+      </div>
+    </div>
+  );
+}
+
+function SnapshotRow({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex items-center justify-between border-b border-border/50 py-1.5 text-[11px] last:border-0">
+      <span className="text-muted">{label}</span>
+      <span className="font-mono text-text">{value}</span>
     </div>
   );
 }

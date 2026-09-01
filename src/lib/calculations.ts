@@ -23,13 +23,16 @@ export const ROI_BENCHMARKS = [
   { label: "Excellent", min: 500, max: 900, color: "teal" },
   { label: "Good", min: 300, max: 500, color: "gold" },
   { label: "Average", min: 100, max: 300, color: "muted" },
+  { label: "Below Avg", min: -Infinity, max: 100, color: "red" },
 ] as const;
 
+/** Hackett Group benchmark tiers: ROI = Net Value Creation ÷ Total Cost Incurred. */
 export function roiBenchmarkFor(roiPct: number) {
   if (roiPct >= 900) return ROI_BENCHMARKS[0];
   if (roiPct >= 500) return ROI_BENCHMARKS[1];
   if (roiPct >= 300) return ROI_BENCHMARKS[2];
-  return ROI_BENCHMARKS[3];
+  if (roiPct >= 100) return ROI_BENCHMARKS[3];
+  return ROI_BENCHMARKS[4];
 }
 
 export interface PnlAggregate {
@@ -87,4 +90,14 @@ export function formatIdrBn(value: number, rateIdrPerUsd: number) {
 
 export function formatPct(value: number) {
   return `${value.toFixed(1)}%`;
+}
+
+/** USD-million figures converted to IDR-billion using the active rate, or left as-is for USD mode. */
+export function convertValue(usdMnValue: number, currency: "USD" | "IDR", rateIdrPerUsd: number) {
+  return currency === "IDR" ? (usdMnValue * rateIdrPerUsd) / 1000 : usdMnValue;
+}
+
+export function formatMoney(usdMnValue: number, currency: "USD" | "IDR", rateIdrPerUsd: number) {
+  const converted = convertValue(usdMnValue, currency, rateIdrPerUsd);
+  return currency === "IDR" ? `Rp${converted.toFixed(2)}Bn` : `$${converted.toFixed(2)}Mn`;
 }

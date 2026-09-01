@@ -19,6 +19,11 @@ const config: Config = {
         text: "#dde6f0",
         muted: "#5e7a98",
         light: "#8ba8c4",
+        fyCol: "#1e2e45",
+        blueHdr: "#1b3a6b",
+        orgHdr: "#b84a0c",
+        gapBg: "#172412",
+        gapBdr: "#2d6b1e",
       },
       fontFamily: {
         sans: ["Inter", "sans-serif"],
