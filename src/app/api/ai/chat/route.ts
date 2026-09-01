@@ -3,6 +3,7 @@ import { requireSession, allowedDivisionsFor } from "@/lib/rbac";
 import { getPnlRows } from "@/lib/queries/pnl";
 import { db } from "@/lib/db";
 import { aiChatHistory } from "@/lib/db/schema";
+import { buildSystemPrompt, buildOfflineAnalysis } from "@/lib/ai-context";
 import Anthropic from "@anthropic-ai/sdk";
 import { z } from "zod";
 
@@ -14,29 +15,13 @@ const bodySchema = z.object({
   filter_context: z.object({
     division: z.string().optional(),
     year: z.string().optional(),
+    // The client has always sent `quarter`; without it declared here Zod stripped it and
+    // the assistant answered on year-level data even when a quarter was selected.
+    quarter: z.string().optional(),
     currency: z.string().optional(),
   }),
   session_id: z.string().uuid().optional(),
 });
-
-function buildContextSummary(rows: Awaited<ReturnType<typeof getPnlRows>>) {
-  if (rows.length === 0) return "No P&L data is loaded for this scope yet.";
-  return rows
-    .map(
-      (r) =>
-        `${r.division} ${r.periodLabel} [${r.recordType}]: NVC=$${r.netValueCreation.toFixed(2)}Mn, ROI=${r.roiPct.toFixed(1)}%, ValueCreation=$${r.totalValueCreation.toFixed(2)}Mn, CostIncurred=$${r.totalCostIncurred.toFixed(2)}Mn`
-    )
-    .join("\n");
-}
-
-/** Deterministic fallback used when ANTHROPIC_API_KEY isn't configured — no API cost, per tech spec §6.2. */
-function offlineSummary(rows: Awaited<ReturnType<typeof getPnlRows>>) {
-  if (rows.length === 0) return "No data is loaded for the current filter scope yet — try uploading a P&L file first.";
-  const actual = rows.filter((r) => r.recordType === "actual");
-  const totalNvc = actual.reduce((a, r) => a + r.netValueCreation, 0);
-  const avgRoi = actual.length ? actual.reduce((a, r) => a + r.roiPct, 0) / actual.length : 0;
-  return `Offline summary (AI assistant not configured): across ${actual.length} actual record(s) in the current scope, total Net Value Creation is $${totalNvc.toFixed(2)}Mn with an average ROI of ${avgRoi.toFixed(1)}%.`;
-}
 
 export async function POST(req: NextRequest) {
   const { session, error } = await requireSession();
@@ -55,6 +40,7 @@ export async function POST(req: NextRequest) {
     divisions: allowed,
     divisionParam: filter_context.division,
     year: filter_context.year,
+    quarter: filter_context.quarter,
   });
 
   const lastUserMessage = messages[messages.length - 1];
@@ -68,20 +54,24 @@ export async function POST(req: NextRequest) {
 
   let reply: string;
   if (!process.env.ANTHROPIC_API_KEY) {
-    reply = offlineSummary(rows);
+    reply = buildOfflineAnalysis(rows, filter_context);
   } else {
-    const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
-    const systemPrompt = `You are the AI Assistant embedded in the Procurement P&L Intelligence Dashboard for Berau Coal Energy. Answer questions about procurement value creation, ROI, and cost structure using ONLY the data below. Be concise (a few sentences), quote figures in USD Millions unless the user asks for IDR, and say clearly when data is missing instead of guessing.\n\nCurrent scope: division=${filter_context.division ?? "All"}, year=${filter_context.year ?? "All"}\n\nData:\n${buildContextSummary(rows)}`;
-
-    const response = await anthropic.messages.create({
-      model: "claude-sonnet-5",
-      max_tokens: 1000,
-      system: systemPrompt,
-      messages: messages.map((m) => ({ role: m.role, content: m.content })),
-    });
-
-    const textBlock = response.content.find((b) => b.type === "text");
-    reply = textBlock && textBlock.type === "text" ? textBlock.text : "Sorry, I couldn't generate a response.";
+    try {
+      const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+      const response = await anthropic.messages.create({
+        model: "claude-sonnet-5",
+        max_tokens: 1000,
+        system: buildSystemPrompt(rows, filter_context),
+        messages: messages.map((m) => ({ role: m.role, content: m.content })),
+      });
+      const textBlock = response.content.find((b) => b.type === "text");
+      reply = textBlock && textBlock.type === "text" ? textBlock.text : buildOfflineAnalysis(rows, filter_context);
+    } catch (err) {
+      // Never leave the user with a dead chat on a transient API failure — fall back to
+      // the deterministic analysis and say what happened.
+      console.error("Anthropic request failed:", err);
+      reply = `${buildOfflineAnalysis(rows, filter_context)}\n\n(The live AI service could not be reached for this question, so the summary above was computed locally.)`;
+    }
   }
 
   await db.insert(aiChatHistory).values({

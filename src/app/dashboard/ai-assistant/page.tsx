@@ -8,6 +8,7 @@ import { useFxLive } from "@/hooks/useFxRates";
 interface ChatMessage {
   role: "user" | "assistant";
   content: string;
+  time: string;
 }
 
 const QUICK_QUESTIONS = [
@@ -18,6 +19,10 @@ const QUICK_QUESTIONS = [
   { icon: "💸", label: "Spending Gap", prompt: "Explain the gap between Actual vs Target spending" },
   { icon: "⚠️", label: "Key Risks", prompt: "What are the key risks I should be aware of in this scope?" },
 ];
+
+function nowLabel() {
+  return new Date().toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" });
+}
 
 const WELCOME =
   "👋 Hello! I'm your Procurement Analytics AI with access to your uploaded P&L data: P&L by division (SMM, SUN, OliveLink, Combine) · BI JISDOR quarterly rates for USD↔IDR · ROI, NVC, Value Creation, Cost & Spending analysis · 15-component cost breakdown per period · Revenue & GP benchmarking. Ask me anything about the current filter scope.";
@@ -55,7 +60,7 @@ export default function AiAssistantPage() {
 
   async function send(text: string) {
     if (!text.trim() || loading) return;
-    const next = [...messages, { role: "user" as const, content: text }];
+    const next = [...messages, { role: "user" as const, content: text, time: nowLabel() }];
     setMessages(next);
     setInput("");
     setLoading(true);
@@ -65,7 +70,7 @@ export default function AiAssistantPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          messages: next,
+          messages: next.map(({ role, content }) => ({ role, content })),
           filter_context: { division, year, quarter, currency },
           session_id: sessionId,
         }),
@@ -73,9 +78,9 @@ export default function AiAssistantPage() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Request failed");
       setSessionId(data.session_id);
-      setMessages((m) => [...m, { role: "assistant", content: data.reply }]);
+      setMessages((m) => [...m, { role: "assistant", content: data.reply, time: nowLabel() }]);
     } catch (err) {
-      setMessages((m) => [...m, { role: "assistant", content: `Error: ${err instanceof Error ? err.message : "unknown"}` }]);
+      setMessages((m) => [...m, { role: "assistant", content: `Error: ${err instanceof Error ? err.message : "unknown"}`, time: nowLabel() }]);
     } finally {
       setLoading(false);
     }
@@ -93,9 +98,9 @@ export default function AiAssistantPage() {
         </div>
 
         <div ref={scrollRef} className="flex-1 space-y-2.5 overflow-y-auto p-3">
-          <Bubble role="assistant" text={WELCOME} />
+          <Bubble role="assistant" text={WELCOME} time="Ready" />
           {messages.map((m, i) => (
-            <Bubble key={i} role={m.role} text={m.content} />
+            <Bubble key={i} role={m.role} text={m.content} time={m.time} />
           ))}
           {loading && (
             <div className="flex items-center gap-1 rounded-lg border border-border bg-bg3 px-3 py-2.5">
@@ -161,7 +166,7 @@ export default function AiAssistantPage() {
   );
 }
 
-function Bubble({ role, text }: { role: "user" | "assistant"; text: string }) {
+function Bubble({ role, text, time }: { role: "user" | "assistant"; text: string; time: string }) {
   const isUser = role === "user";
   return (
     <div className={`flex flex-col gap-0.5 ${isUser ? "items-end" : "items-start"}`}>
@@ -172,6 +177,7 @@ function Bubble({ role, text }: { role: "user" | "assistant"; text: string }) {
       >
         {text}
       </div>
+      <div className={`text-[10px] text-muted ${isUser ? "text-right" : ""}`}>{time}</div>
     </div>
   );
 }
