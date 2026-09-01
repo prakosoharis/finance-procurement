@@ -35,6 +35,23 @@ export function roiBenchmarkFor(roiPct: number) {
   return ROI_BENCHMARKS[4];
 }
 
+export const VSR_BENCHMARKS = [
+  { label: "World Class", min: 6, color: "green" },
+  { label: "Excellent", min: 4, max: 6, color: "teal" },
+  { label: "Good", min: 2, max: 4, color: "gold" },
+  { label: "Average", min: 1, max: 2, color: "muted" },
+  { label: "Below Avg", min: -Infinity, max: 1, color: "red" },
+] as const;
+
+/** Ardent Partners / CAPS / Bain benchmark tiers: Value to SUM = Value Creation ÷ Initial SUM. */
+export function vsrBenchmarkFor(vsrPct: number) {
+  if (vsrPct >= 6) return VSR_BENCHMARKS[0];
+  if (vsrPct >= 4) return VSR_BENCHMARKS[1];
+  if (vsrPct >= 2) return VSR_BENCHMARKS[2];
+  if (vsrPct >= 1) return VSR_BENCHMARKS[3];
+  return VSR_BENCHMARKS[4];
+}
+
 export interface PnlAggregate {
   costSaving: number;
   costAvoidance: number;

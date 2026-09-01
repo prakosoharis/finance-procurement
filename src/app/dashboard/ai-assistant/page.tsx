@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import { useFilterStore } from "@/store/useFilterStore";
+import { useUiStore } from "@/store/useUiStore";
 import { useFxLive } from "@/hooks/useFxRates";
 
 interface ChatMessage {
@@ -29,10 +30,28 @@ export default function AiAssistantPage() {
   const [sessionId, setSessionId] = useState<string | undefined>(undefined);
   const [loading, setLoading] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const consumedPrompt = useRef(false);
+  const pendingAiPrompt = useUiStore((s) => s.pendingAiPrompt);
+  const setPendingAiPrompt = useUiStore((s) => s.setPendingAiPrompt);
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
   }, [messages, loading]);
+
+  // "Ask AI to Elaborate" buttons elsewhere in the dashboard stash a prompt here, then
+  // route to this page — pick it up once on mount and clear it so it doesn't resend.
+  // The ref guard (rather than relying on setPendingAiPrompt(null) alone) is what makes
+  // this safe under React StrictMode's dev-only double-invoke of mount effects, where
+  // both invocations would otherwise still see the same pre-clear store value.
+  useEffect(() => {
+    if (pendingAiPrompt && !consumedPrompt.current) {
+      consumedPrompt.current = true;
+      const prompt = pendingAiPrompt;
+      setPendingAiPrompt(null);
+      send(prompt);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   async function send(text: string) {
     if (!text.trim() || loading) return;
