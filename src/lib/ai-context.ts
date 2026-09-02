@@ -1,7 +1,6 @@
 import type { PnlRow } from "@/types";
 import { COST_COMPONENT_DEFS, roiBenchmarkFor, vsrBenchmarkFor } from "@/lib/calculations";
 import { aggregationRows, sumField } from "@/lib/format";
-import { buildPnlInsights } from "@/lib/pnl-insights";
 
 export interface ChatScope {
   division?: string;
@@ -54,49 +53,57 @@ export function buildSystemPrompt(rows: PnlRow[], scope: ChatScope): string {
 }
 
 /**
- * Deterministic analysis served when ANTHROPIC_API_KEY isn't configured — the same
- * aggregation the Insights and P&L tabs use, so the answer is real analysis rather than
- * a placeholder. Zero API cost (tech spec §6.2 "offline fallback").
+ * Deterministic analysis served when the Anthropic API isn't configured or is
+ * unreachable — mirrors the reference dashboard's _localAnalysisFallback(): headline
+ * ROI with tier, value creation vs target, spending vs target, value/spend tier and the
+ * dominant cost driver, all bolded with markdown that the chat bubble renders.
+ * Uses the same aggregation as the Insights and P&L tabs, so it is real analysis rather
+ * than a placeholder, at zero API cost (tech spec §6.2 "offline fallback").
  */
 export function buildOfflineAnalysis(rows: PnlRow[], scope: ChatScope): string {
-  if (rows.length === 0) {
-    return "No P&L data is loaded for the current filter scope yet. Ask an admin to upload the procurement database file, or widen the division/year filter.";
-  }
-
-  const division = scope.division ?? "Combine";
-  const insights = buildPnlInsights(rows, division, "USD", 0);
+  const division = scope.division === "Combine" ? "Combine" : (scope.division ?? "Combine");
   const actual = aggregationRows(rows, "actual");
   const target = aggregationRows(rows, "budget");
 
-  const lines: string[] = [];
-  if (insights) {
-    lines.push(insights.headline, "");
-    lines.push(...insights.bullets.map((b) => `• ${b}`));
+  if (actual.length === 0) {
+    return "📊 No data in the current filter scope. Try widening the Division / Year / Period selectors above.";
   }
 
-  // Value-to-SUM tier, which the P&L insight bullets don't cover.
+  const chronological = [...actual].sort((a, b) => a.year - b.year || (a.quarter ?? 5) - (b.quarter ?? 5));
+  const scopeLabel =
+    chronological.length > 1 ? `${chronological[0].periodLabel} → ${chronological[chronological.length - 1].periodLabel}` : chronological[0].periodLabel;
+
   const vc = sumField(actual, "totalValueCreation");
-  const sum = sumField(actual, "initialSum");
-  if (sum > 0) {
-    const vsr = (vc / sum) * 100;
-    lines.push(`• Value-to-SUM: ${vsr.toFixed(2)}% (${vsrBenchmarkFor(vsr).label}).`);
-  }
-
-  // Spending vs plan.
-  const spA = sumField(actual, "initialSum");
-  const spT = sumField(target, "initialSum");
-  if (spT > 0) {
-    const delta = ((spA - spT) / spT) * 100;
-    lines.push(`• Managed spend is ${delta >= 0 ? "over" : "under"} plan by ${Math.abs(delta).toFixed(1)}%.`);
-  }
-
+  const vcT = sumField(target, "totalValueCreation");
   const cost = sumField(actual, "totalCostIncurred");
   const nvc = sumField(actual, "netValueCreation");
-  if (cost > 0) {
-    const roi = (nvc / cost) * 100;
-    lines.push(`• Hackett tier for this scope: ${roiBenchmarkFor(roi).label}.`);
+  const nvcT = sumField(target, "netValueCreation");
+  const sp = sumField(actual, "initialSum");
+  const spT = sumField(target, "initialSum");
+
+  const roi = cost > 0 ? (nvc / cost) * 100 : 0;
+  const vsr = sp > 0 ? (vc / sp) * 100 : 0;
+  const nvcVar = nvcT !== 0 ? (nvc / nvcT - 1) * 100 : null;
+  const spVar = spT !== 0 ? (sp / spT - 1) * 100 : null;
+
+  // Dominant cost driver across the whole scope.
+  let topLabel: string | null = null;
+  let topAmt = 0;
+  for (const def of COST_COMPONENT_DEFS) {
+    const total = actual.reduce((a, r) => a + (r.costComponents[def.key] ?? 0), 0);
+    if (total > topAmt) {
+      topAmt = total;
+      topLabel = def.label;
+    }
   }
 
-  lines.push("", "💡 This is a deterministic summary computed from your data. Set ANTHROPIC_API_KEY to enable full conversational analysis.");
-  return lines.join("\n");
+  const out: string[] = [];
+  out.push(`📊 **${division} · ${scopeLabel}**`, "");
+  out.push(`**Headline:** NVC ${nvc.toFixed(2)} Mn on cost ${cost.toFixed(3)} Mn → ROI **${roi.toFixed(0)}%** (${(roi / 100).toFixed(1)}×) — ${roiBenchmarkFor(roi).label}.`, "");
+  out.push(`**Value Creation:** ${vc.toFixed(2)} Mn actual vs ${vcT.toFixed(2)} Mn target${nvcVar !== null ? ` (NVC variance ${nvcVar >= 0 ? "+" : ""}${nvcVar.toFixed(1)}%)` : ""}.`);
+  out.push(`**Spending:** ${sp.toFixed(1)} Mn actual vs ${spT.toFixed(1)} Mn target${spVar !== null ? ` (${spVar >= 0 ? "+" : ""}${spVar.toFixed(1)}%)` : ""}.`);
+  out.push(`**Value/Spend:** ${vsr.toFixed(2)}% — ${vsrBenchmarkFor(vsr).label}.`);
+  if (topLabel) out.push(`**Top cost driver:** ${topLabel} at ${topAmt.toFixed(2)} Mn (${cost > 0 ? ((topAmt / cost) * 100).toFixed(0) : "0"}% of cost).`);
+  out.push("", "💡 Computed locally from your uploaded data. Set ANTHROPIC_API_KEY to enable full conversational analysis.");
+  return out.join("\n");
 }
